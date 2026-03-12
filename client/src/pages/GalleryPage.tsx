@@ -5,12 +5,17 @@ import { getAllArtworks, Artwork, UPLOADS_URL } from "../services/artworkApi";
 export default function GalleryPage() {
   const [artworks, setArtworks] = useState<Artwork[]>([]);
   const [loading, setLoading] = useState(true);
+  const [slow, setSlow] = useState(false);
 
   useEffect(() => {
+    const timer = setTimeout(() => setSlow(true), 5000);
     getAllArtworks()
       .then(setArtworks)
       .catch(console.error)
-      .finally(() => setLoading(false));
+      .finally(() => {
+        clearTimeout(timer);
+        setLoading(false);
+      });
   }, []);
 
   return (
@@ -37,7 +42,10 @@ export default function GalleryPage() {
       </div>
 
       {loading ? (
-        <p className="text-center text-gray-500 mt-20">Loading artworks...</p>
+        <div className="text-center text-gray-500 mt-20">
+          <p>Loading artworks...</p>
+          {slow && <p className="text-sm mt-2">Server is waking up, this may take a moment...</p>}
+        </div>
       ) : artworks.length === 0 ? (
         <p className="text-center text-gray-500 mt-20">No artworks yet. Add your first one!</p>
       ) : (
