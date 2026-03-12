@@ -74,7 +74,7 @@ export default function ArtworkDetailPage() {
         />
         <div>
           <h2 className="font-serif text-xl font-semibold text-gray-900 mb-3">About the Artwork</h2>
-          <div className="border border-gray-200 rounded-lg p-4 text-gray-600 leading-relaxed whitespace-pre-wrap">
+          <div className="border-2 border-gray-300 rounded-lg p-4 text-gray-600 leading-relaxed whitespace-pre-wrap">
             {artwork.artwork_info}
           </div>
         </div>
