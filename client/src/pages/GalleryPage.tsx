@@ -46,7 +46,7 @@ export default function GalleryPage() {
             <Link
               key={artwork.id}
               to={`/gallery/${artwork.id}`}
-              className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow"
+              className="bg-cream rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow"
             >
               <div className="w-full h-72 overflow-hidden bg-gray-50">
                 <img
