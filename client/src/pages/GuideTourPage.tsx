@@ -5,15 +5,14 @@ type CameraStatus = "pending" | "active" | "denied";
 
 export default function GuideTourPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [cameraStatus, setCameraStatus] = useState<CameraStatus>("pending");
 
   useEffect(() => {
-    let stream: MediaStream | null = null;
-
     navigator.mediaDevices
       .getUserMedia({ video: { facingMode: "environment" } })
       .then((s) => {
-        stream = s;
+        streamRef.current = s;
         if (videoRef.current) {
           videoRef.current.srcObject = s;
         }
@@ -24,7 +23,7 @@ export default function GuideTourPage() {
       });
 
     return () => {
-      stream?.getTracks().forEach((t) => t.stop());
+      streamRef.current?.getTracks().forEach((t) => t.stop());
     };
   }, []);
 
@@ -57,24 +56,22 @@ export default function GuideTourPage() {
           </div>
         )}
 
-        {cameraStatus === "active" && (
-          <div className="relative">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-full aspect-[3/4] object-cover rounded-xl"
-            />
-            <button className="absolute bottom-6 left-1/2 -translate-x-1/2 w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-lg">
-              <span className="w-5 h-5 bg-accent rounded-full" />
-            </button>
-          </div>
-        )}
+        <div className={cameraStatus === "active" ? "relative" : "hidden"}>
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="w-full aspect-[3/4] object-cover rounded-xl"
+          />
+          <button className="absolute bottom-6 left-1/2 -translate-x-1/2 w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-100 transition-colors cursor-pointer">
+            <span className="w-3.5 h-3.5 bg-accent rounded-full" />
+          </button>
+        </div>
 
         {cameraStatus === "pending" && (
-          <button className="absolute bottom-6 left-1/2 -translate-x-1/2 w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-lg">
-            <span className="w-5 h-5 bg-accent rounded-full" />
+          <button className="absolute bottom-6 left-1/2 -translate-x-1/2 w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-100 transition-colors cursor-pointer">
+            <span className="w-3.5 h-3.5 bg-accent rounded-full" />
           </button>
         )}
       </div>
