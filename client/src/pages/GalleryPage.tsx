@@ -51,7 +51,7 @@ export default function GalleryPage() {
               <img
                 src={`${UPLOADS_URL}/${artwork.image_filename}`}
                 alt={artwork.artwork_name}
-                className="w-full h-48 object-cover"
+                className="w-full h-48 object-contain bg-gray-50"
               />
               <div className="p-4">
                 <h3 className="font-semibold text-gray-900 truncate">{artwork.artwork_name}</h3>
