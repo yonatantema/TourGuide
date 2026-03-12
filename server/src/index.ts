@@ -5,6 +5,7 @@ import path from "path";
 import fs from "fs";
 import pool from "./db";
 import artworkRoutes from "./routes/artworks";
+import guideRoutes from "./routes/guides";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -24,6 +25,7 @@ app.use("/uploads", express.static(uploadsDir));
 
 // API routes
 app.use("/api/artworks", artworkRoutes);
+app.use("/api/guides", guideRoutes);
 
 // Initialize database table and start server
 const initSQL = fs.readFileSync(path.join(__dirname, "db/init.sql"), "utf-8");

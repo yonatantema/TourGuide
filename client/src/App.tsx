@@ -6,6 +6,9 @@ import ArtworkDetailPage from "./pages/ArtworkDetailPage";
 import AddArtworkPage from "./pages/AddArtworkPage";
 import EditArtworkPage from "./pages/EditArtworkPage";
 import GuidelinesPage from "./pages/GuidelinesPage";
+import AddGuidePage from "./pages/AddGuidePage";
+import GuideDetailPage from "./pages/GuideDetailPage";
+import EditGuidePage from "./pages/EditGuidePage";
 
 export default function App() {
   return (
@@ -18,6 +21,9 @@ export default function App() {
         <Route path="/gallery/:id" element={<ArtworkDetailPage />} />
         <Route path="/gallery/:id/edit" element={<EditArtworkPage />} />
         <Route path="/guidelines" element={<GuidelinesPage />} />
+        <Route path="/guidelines/add" element={<AddGuidePage />} />
+        <Route path="/guidelines/:id" element={<GuideDetailPage />} />
+        <Route path="/guidelines/:id/edit" element={<EditGuidePage />} />
       </Routes>
     </BrowserRouter>
   );
