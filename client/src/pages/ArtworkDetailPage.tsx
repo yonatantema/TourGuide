@@ -53,7 +53,7 @@ export default function ArtworkDetailPage() {
         </button>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-6 md:p-8">
+      <div className="bg-cream rounded-xl border border-gray-200 p-6 md:p-8">
         <div className="flex items-center justify-between mb-2">
           <h1 className="font-serif text-3xl font-bold text-gray-900">{artwork.artwork_name}</h1>
           <Link
