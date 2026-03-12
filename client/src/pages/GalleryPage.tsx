@@ -48,11 +48,11 @@ export default function GalleryPage() {
               to={`/gallery/${artwork.id}`}
               className="bg-cream rounded-xl border-2 border-gray-300 overflow-hidden hover:shadow-lg transition-shadow"
             >
-              <div className="w-full h-72 overflow-hidden bg-gray-50">
+              <div className="relative w-full h-72 overflow-hidden bg-gray-50">
                 <img
                   src={`${UPLOADS_URL}/${artwork.image_filename}`}
                   alt={artwork.artwork_name}
-                  className="w-full h-full object-cover"
+                  className="absolute inset-0 w-full h-full object-cover"
                 />
               </div>
               <div className="p-3">
