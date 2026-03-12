@@ -14,8 +14,8 @@ export default function ChooseGuidePage() {
   }, []);
 
   return (
-    <div className="min-h-screen px-6 py-10 max-w-5xl mx-auto">
-      <div className="flex items-start justify-between mb-2">
+    <div className="min-h-screen px-6 py-10 max-w-5xl mx-auto flex flex-col">
+      <div className="flex items-start justify-between mb-8">
         <h1 className="font-serif text-5xl md:text-6xl font-bold text-gray-900">
           Choose Your Guide
         </h1>
@@ -34,20 +34,7 @@ export default function ChooseGuidePage() {
       </p>
 
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          {[1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              className="bg-cream rounded-xl border-2 border-gray-300 p-6 flex items-start gap-4 animate-pulse"
-            >
-              <div className="flex-shrink-0 w-10 h-10 bg-gray-200 rounded-lg" />
-              <div className="flex-1">
-                <div className="h-5 bg-gray-200 rounded w-2/3 mb-3" />
-                <div className="h-3 bg-gray-200 rounded w-full" />
-              </div>
-            </div>
-          ))}
-        </div>
+        <p className="text-center text-gray-500 mt-20">Loading guides...</p>
       ) : guides.length === 0 ? (
         <p className="text-center text-gray-500 mt-20">No guides available yet.</p>
       ) : (
@@ -72,7 +59,7 @@ export default function ChooseGuidePage() {
         </div>
       )}
 
-      <p className="text-center text-gray-400 text-sm mt-10">
+      <p className="text-center text-gray-400 text-sm mt-auto pt-10">
         You can change the guide at any time during the tour
       </p>
     </div>
