@@ -30,7 +30,7 @@ export default function GuideTourPage() {
   return (
     <div className="min-h-screen px-6 py-10 max-w-5xl mx-auto flex flex-col">
       <div className="flex items-start justify-between mb-8">
-        <h1 className="font-serif text-5xl md:text-6xl font-bold text-gray-900">
+        <h1 className="font-serif text-4xl md:text-5xl font-bold text-gray-900">
           Museum Guide
         </h1>
         <Link
@@ -43,13 +43,13 @@ export default function GuideTourPage() {
 
       <div className="bg-cream rounded-xl overflow-hidden relative">
         {cameraStatus === "pending" && (
-          <div className="bg-gray-200 flex items-center justify-center aspect-[4/3] rounded-xl">
+          <div className="bg-gray-200 flex items-center justify-center aspect-[16/10] rounded-xl">
             <p className="text-gray-500">Camera access required</p>
           </div>
         )}
 
         {cameraStatus === "denied" && (
-          <div className="bg-gray-200 flex items-center justify-center aspect-[4/3] rounded-xl">
+          <div className="bg-gray-200 flex items-center justify-center aspect-[16/10] rounded-xl">
             <p className="text-gray-500">
               Camera access was denied. Please allow camera access and reload.
             </p>
@@ -62,7 +62,7 @@ export default function GuideTourPage() {
             autoPlay
             playsInline
             muted
-            className="w-full aspect-[4/3] object-cover rounded-xl"
+            className="w-full aspect-[16/10] object-cover rounded-xl"
           />
           <button className="absolute bottom-6 left-1/2 -translate-x-1/2 w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-100 transition-colors cursor-pointer">
             <span className="w-3.5 h-3.5 bg-accent rounded-full" />
