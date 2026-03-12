@@ -36,7 +36,7 @@ export default function AddArtworkPage() {
         <h1 className="font-serif text-3xl font-bold text-gray-900">Add Artwork</h1>
         <Link
           to="/gallery"
-          className="px-5 py-2 border-2 border-gray-300 text-gray-700 rounded-full text-sm font-medium hover:border-gray-500 transition-colors"
+          className="px-5 py-2 border-2 border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:border-gray-500 transition-colors"
         >
           &larr; Back to Gallery
         </Link>
@@ -44,22 +44,22 @@ export default function AddArtworkPage() {
 
       <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-gray-200 p-6 md:p-8 space-y-5">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Artist Name</label>
-          <input
-            type="text"
-            required
-            value={artistName}
-            onChange={(e) => setArtistName(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
-          />
-        </div>
-        <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Artwork Name</label>
           <input
             type="text"
             required
             value={artworkName}
             onChange={(e) => setArtworkName(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Artist Name</label>
+          <input
+            type="text"
+            required
+            value={artistName}
+            onChange={(e) => setArtistName(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
           />
         </div>
@@ -79,7 +79,7 @@ export default function AddArtworkPage() {
             type="file"
             accept="image/*"
             onChange={(e) => setImage(e.target.files?.[0] || null)}
-            className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-medium file:bg-accent file:text-white hover:file:bg-indigo-600 file:cursor-pointer"
+            className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-accent file:text-white hover:file:bg-indigo-600 file:cursor-pointer"
           />
         </div>
         <button

@@ -23,13 +23,13 @@ export default function GalleryPage() {
         <div className="flex gap-3 mt-4 sm:mt-0">
           <Link
             to="/"
-            className="px-5 py-2 border-2 border-gray-300 text-gray-700 rounded-full text-sm font-medium hover:border-gray-500 transition-colors"
+            className="px-5 py-2 border-2 border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:border-gray-500 transition-colors"
           >
             &larr; Back to Home
           </Link>
           <Link
             to="/gallery/add"
-            className="px-5 py-2 bg-accent text-white rounded-full text-sm font-medium hover:bg-indigo-600 transition-colors"
+            className="px-5 py-2 bg-accent text-white rounded-md text-sm font-medium hover:bg-indigo-600 transition-colors"
           >
             + Add Artwork
           </Link>

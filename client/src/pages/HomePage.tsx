@@ -12,19 +12,19 @@ export default function HomePage() {
           Unlock The Unseen. Discover the collections with the AI Museum guide
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <button className="px-8 py-3 border-2 border-gray-800 text-gray-800 rounded-full font-medium hover:bg-gray-800 hover:text-white transition-colors">
+          <button className="px-8 py-3 border-2 border-gray-800 text-gray-800 rounded-md font-medium hover:bg-gray-800 hover:text-white transition-colors">
             Take me to the guide
           </button>
           <Link
             to="/gallery"
-            className="px-8 py-3 bg-gray-900 text-white rounded-full font-medium hover:bg-gray-700 transition-colors"
+            className="px-8 py-3 bg-gray-900 text-white rounded-md font-medium hover:bg-gray-700 transition-colors"
           >
             Admin
           </Link>
         </div>
       </div>
       <footer className="absolute bottom-6 text-sm text-gray-400">
-        &copy; TEMA Creative 2025 - All Rights Reserved
+        &copy; TEMA Creative 2026 - All Rights Reserved
       </footer>
     </div>
   );
