@@ -41,7 +41,7 @@ export default function GalleryPage() {
       ) : artworks.length === 0 ? (
         <p className="text-center text-gray-500 mt-20">No artworks yet. Add your first one!</p>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {artworks.map((artwork) => (
             <Link
               key={artwork.id}
@@ -51,7 +51,7 @@ export default function GalleryPage() {
               <img
                 src={`${UPLOADS_URL}/${artwork.image_filename}`}
                 alt={artwork.artwork_name}
-                className="w-full h-52 object-cover"
+                className="w-full h-64 object-cover"
               />
               <div className="p-3">
                 <h3 className="font-semibold text-gray-900 truncate text-sm">{artwork.artwork_name}</h3>
