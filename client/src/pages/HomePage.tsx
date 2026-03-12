@@ -16,7 +16,7 @@ export default function HomePage() {
             Take me to the guide
           </button>
           <Link
-            to="/gallery"
+            to="/admin"
             className="px-8 py-3 bg-gray-900 text-white rounded-md font-medium hover:bg-gray-700 transition-colors"
           >
             Admin

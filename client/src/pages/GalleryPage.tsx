@@ -22,10 +22,10 @@ export default function GalleryPage() {
         </div>
         <div className="flex gap-3 mt-4 sm:mt-0">
           <Link
-            to="/"
+            to="/admin"
             className="px-5 py-2 border-2 border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:border-gray-500 transition-colors"
           >
-            &larr; Back to Home
+            &larr; Back to Admin
           </Link>
           <Link
             to="/gallery/add"
