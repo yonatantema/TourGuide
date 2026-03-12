@@ -12,9 +12,12 @@ export default function HomePage() {
           Unlock The Unseen. Discover the collections with the AI Museum guide
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <button className="px-8 py-3 border-2 border-gray-800 text-gray-800 rounded-md font-medium hover:bg-gray-800 hover:text-white transition-colors">
+          <Link
+            to="/guides"
+            className="px-8 py-3 border-2 border-gray-800 text-gray-800 rounded-md font-medium hover:bg-gray-800 hover:text-white transition-colors"
+          >
             Take me to the guide
-          </button>
+          </Link>
           <Link
             to="/admin"
             className="px-8 py-3 bg-gray-900 text-white rounded-md font-medium hover:bg-gray-700 transition-colors"
