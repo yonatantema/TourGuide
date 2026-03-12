@@ -34,7 +34,20 @@ export default function ChooseGuidePage() {
       </p>
 
       {loading ? (
-        <p className="text-center text-gray-500 mt-20">Loading guides...</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="bg-cream rounded-xl border-2 border-gray-300 p-6 flex items-start gap-4 animate-pulse"
+            >
+              <div className="flex-shrink-0 w-10 h-10 bg-gray-200 rounded-lg" />
+              <div className="flex-1">
+                <div className="h-5 bg-gray-200 rounded w-2/3 mb-3" />
+                <div className="h-3 bg-gray-200 rounded w-full" />
+              </div>
+            </div>
+          ))}
+        </div>
       ) : guides.length === 0 ? (
         <p className="text-center text-gray-500 mt-20">No guides available yet.</p>
       ) : (
