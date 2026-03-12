@@ -54,7 +54,7 @@ export default function GuideDetailPage() {
       </div>
 
       <div className="bg-cream rounded-xl border-2 border-gray-300 p-6 md:p-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-2">
           <h1 className="font-serif text-3xl font-bold text-gray-900">{guide.name}</h1>
           <Link
             to={`/guidelines/${guide.id}/edit`}
@@ -66,6 +66,7 @@ export default function GuideDetailPage() {
             </svg>
           </Link>
         </div>
+        <p className="text-gray-500 mb-6">{guide.description}</p>
 
         <div className="mb-6">
           <h2 className="font-serif text-xl font-semibold text-gray-900 mb-1">Guide Personality & General Instructions</h2>

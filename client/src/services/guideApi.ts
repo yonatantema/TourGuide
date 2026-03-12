@@ -4,6 +4,7 @@ const API_BASE = `${API_URL}/api/guides`;
 export interface Guide {
   id: number;
   name: string;
+  description: string;
   personality: string;
   response_guidelines: string;
   created_at: string;
@@ -21,7 +22,7 @@ export async function getGuide(id: number): Promise<Guide> {
   return res.json();
 }
 
-export async function createGuide(data: { name: string; personality: string; response_guidelines: string }): Promise<Guide> {
+export async function createGuide(data: { name: string; description: string; personality: string; response_guidelines: string }): Promise<Guide> {
   const res = await fetch(API_BASE, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -31,7 +32,7 @@ export async function createGuide(data: { name: string; personality: string; res
   return res.json();
 }
 
-export async function updateGuide(id: number, data: { name: string; personality: string; response_guidelines: string }): Promise<Guide> {
+export async function updateGuide(id: number, data: { name: string; description: string; personality: string; response_guidelines: string }): Promise<Guide> {
   const res = await fetch(`${API_BASE}/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },

@@ -6,6 +6,7 @@ export default function EditGuidePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [personality, setPersonality] = useState("");
   const [responseGuidelines, setResponseGuidelines] = useState("");
   const [loading, setLoading] = useState(true);
@@ -16,6 +17,7 @@ export default function EditGuidePage() {
     getGuide(Number(id))
       .then((guide) => {
         setName(guide.name);
+        setDescription(guide.description);
         setPersonality(guide.personality);
         setResponseGuidelines(guide.response_guidelines);
       })
@@ -30,6 +32,7 @@ export default function EditGuidePage() {
     try {
       await updateGuide(Number(id), {
         name,
+        description,
         personality,
         response_guidelines: responseGuidelines,
       });
@@ -66,6 +69,17 @@ export default function EditGuidePage() {
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Guide Description</label>
+          <p className="text-xs text-gray-500 mb-2">A short description of this guide</p>
+          <input
+            type="text"
+            required
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
           />
         </div>

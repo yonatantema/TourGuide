@@ -5,6 +5,7 @@ import { createGuide } from "../services/guideApi";
 export default function AddGuidePage() {
   const navigate = useNavigate();
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [personality, setPersonality] = useState("");
   const [responseGuidelines, setResponseGuidelines] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -15,6 +16,7 @@ export default function AddGuidePage() {
     try {
       const guide = await createGuide({
         name,
+        description,
         personality,
         response_guidelines: responseGuidelines,
       });
@@ -47,7 +49,17 @@ export default function AddGuidePage() {
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Professional Guide"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Guide Description</label>
+          <p className="text-xs text-gray-500 mb-2">A short description of this guide</p>
+          <input
+            type="text"
+            required
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
           />
         </div>
@@ -59,7 +71,6 @@ export default function AddGuidePage() {
             rows={5}
             value={personality}
             onChange={(e) => setPersonality(e.target.value)}
-            placeholder="You are a professional and knowledgeable art museum guide. Provide detailed, accurate information about artworks, artists, and art history. Maintain a formal yet friendly tone."
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent resize-vertical"
           />
         </div>
@@ -71,7 +82,6 @@ export default function AddGuidePage() {
             rows={5}
             value={responseGuidelines}
             onChange={(e) => setResponseGuidelines(e.target.value)}
-            placeholder="Keep your answers very short and concise - aim for 2 sentences per response."
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent resize-vertical"
           />
         </div>

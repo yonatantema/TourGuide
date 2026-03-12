@@ -32,10 +32,10 @@ router.get("/:id", async (req: Request, res: Response) => {
 // POST /api/guides — Create guide
 router.post("/", async (req: Request, res: Response) => {
   try {
-    const { name, personality, response_guidelines } = req.body;
+    const { name, description, personality, response_guidelines } = req.body;
     const result = await pool.query(
-      "INSERT INTO guides (name, personality, response_guidelines) VALUES ($1, $2, $3) RETURNING *",
-      [name, personality, response_guidelines]
+      "INSERT INTO guides (name, description, personality, response_guidelines) VALUES ($1, $2, $3, $4) RETURNING *",
+      [name, description, personality, response_guidelines]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -48,7 +48,7 @@ router.post("/", async (req: Request, res: Response) => {
 router.put("/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, personality, response_guidelines } = req.body;
+    const { name, description, personality, response_guidelines } = req.body;
 
     const existing = await pool.query("SELECT * FROM guides WHERE id = $1", [id]);
     if (existing.rows.length === 0) {
@@ -56,8 +56,8 @@ router.put("/:id", async (req: Request, res: Response) => {
     }
 
     const result = await pool.query(
-      "UPDATE guides SET name = $1, personality = $2, response_guidelines = $3 WHERE id = $4 RETURNING *",
-      [name, personality, response_guidelines, id]
+      "UPDATE guides SET name = $1, description = $2, personality = $3, response_guidelines = $4 WHERE id = $5 RETURNING *",
+      [name, description, personality, response_guidelines, id]
     );
     res.json(result.rows[0]);
   } catch (err) {
