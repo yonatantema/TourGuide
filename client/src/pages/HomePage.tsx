@@ -20,7 +20,7 @@ export default function HomePage() {
           </Link>
           <Link
             to="/admin"
-            className="px-8 py-3 bg-gray-900 text-white rounded-md font-medium hover:bg-gray-700 transition-colors"
+            className="px-8 py-3 border-2 border-gray-800 text-gray-800 rounded-md font-medium hover:bg-gray-800 hover:text-white transition-colors"
           >
             Admin
           </Link>
