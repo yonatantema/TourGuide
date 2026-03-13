@@ -6,6 +6,7 @@ import fs from "fs";
 import pool from "./db";
 import artworkRoutes from "./routes/artworks";
 import guideRoutes from "./routes/guides";
+import recognizeRoutes from "./routes/recognize";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -18,7 +19,7 @@ if (!fs.existsSync(uploadsDir)) {
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 
 // Serve uploaded images statically
 app.use("/uploads", express.static(uploadsDir));
@@ -26,6 +27,7 @@ app.use("/uploads", express.static(uploadsDir));
 // API routes
 app.use("/api/artworks", artworkRoutes);
 app.use("/api/guides", guideRoutes);
+app.use("/api/recognize", recognizeRoutes);
 
 // Initialize database table and start server
 const initSQL = fs.readFileSync(path.join(__dirname, "db/init.sql"), "utf-8");

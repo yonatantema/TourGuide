@@ -47,3 +47,18 @@ export async function deleteArtwork(id: number): Promise<void> {
   });
   if (!res.ok) throw new Error("Failed to delete artwork");
 }
+
+export interface RecognizeResult {
+  recognized: boolean;
+  artworkId?: number;
+}
+
+export async function recognizeArtwork(imageDataUrl: string): Promise<RecognizeResult> {
+  const res = await fetch(`${API_URL}/api/recognize`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ image: imageDataUrl }),
+  });
+  if (!res.ok) throw new Error("Failed to recognize artwork");
+  return res.json();
+}
