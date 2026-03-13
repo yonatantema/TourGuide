@@ -149,7 +149,7 @@ export default function GuideTourPage() {
       {showModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex flex-col items-center justify-center px-6">
           {/* Modal card */}
-          <div className="bg-cream rounded-xl shadow-lg max-w-sm w-full p-6 relative">
+          <div className="bg-cream rounded-xl shadow-lg max-w-sm max-h-[80vh] w-full p-6 relative flex flex-col">
             {/* Close button — hidden on recognized state */}
             {recognitionState !== "recognized" && (
               <button
@@ -190,12 +190,12 @@ export default function GuideTourPage() {
             )}
 
             {recognitionState === "recognized" && recognizedArtwork && (
-              <div className="flex flex-col items-center gap-4">
-                <div className="relative w-full">
+              <div className="flex flex-col items-center gap-4 overflow-y-auto min-h-0">
+                <div className="relative w-full flex-shrink-0">
                   <img
                     src={`${UPLOADS_URL}/${recognizedArtwork.image_filename}`}
                     alt={recognizedArtwork.artwork_name}
-                    className="w-full rounded-lg object-cover"
+                    className="w-full max-h-[50vh] rounded-lg object-contain"
                   />
                   <button
                     onClick={dismissModal}
