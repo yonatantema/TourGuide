@@ -1,17 +1,19 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
-import { recognizeArtwork } from "../services/artworkApi";
+import { Link, useNavigate } from "react-router-dom";
+import { recognizeArtwork, getArtwork, Artwork, UPLOADS_URL } from "../services/artworkApi";
 
 type CameraStatus = "pending" | "active" | "denied";
-type RecognitionState = "idle" | "loading" | "not-recognized";
+type RecognitionState = "idle" | "loading" | "not-recognized" | "recognized";
 
 export default function GuideTourPage() {
+  const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [cameraStatus, setCameraStatus] = useState<CameraStatus>("pending");
   const [recognitionState, setRecognitionState] =
     useState<RecognitionState>("idle");
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [recognizedArtwork, setRecognizedArtwork] = useState<Artwork | null>(null);
 
   useEffect(() => {
     navigator.mediaDevices
@@ -50,10 +52,15 @@ export default function GuideTourPage() {
 
     try {
       const result = await recognizeArtwork(imageDataUrl);
-      if (result.recognized) {
-        // Success flow will be implemented later
-        setCapturedImage(null);
-        setRecognitionState("idle");
+      if (result.recognized && result.artworkId) {
+        try {
+          const artwork = await getArtwork(result.artworkId);
+          setRecognizedArtwork(artwork);
+          setCapturedImage(null);
+          setRecognitionState("recognized");
+        } catch {
+          setRecognitionState("not-recognized");
+        }
       } else {
         setRecognitionState("not-recognized");
       }
@@ -64,6 +71,7 @@ export default function GuideTourPage() {
 
   const dismissModal = () => {
     setCapturedImage(null);
+    setRecognizedArtwork(null);
     setRecognitionState("idle");
   };
 
@@ -137,13 +145,15 @@ export default function GuideTourPage() {
         <div className="fixed inset-0 bg-black/60 z-50 flex flex-col items-center justify-center px-6">
           {/* Modal card */}
           <div className="bg-cream rounded-xl shadow-lg max-w-sm w-full p-6 relative">
-            {/* Close button */}
-            <button
-              onClick={dismissModal}
-              className="absolute top-4 right-4 w-8 h-8 bg-accent rounded-full flex items-center justify-center text-white text-sm font-bold cursor-pointer hover:opacity-80 transition-opacity"
-            >
-              &times;
-            </button>
+            {/* Close button — hidden on recognized state */}
+            {recognitionState !== "recognized" && (
+              <button
+                onClick={dismissModal}
+                className="absolute top-4 right-4 w-8 h-8 bg-accent rounded-full flex items-center justify-center text-white text-sm font-bold cursor-pointer hover:opacity-80 transition-opacity"
+              >
+                &times;
+              </button>
+            )}
 
             {recognitionState === "loading" && (
               <div className="flex flex-col items-center gap-4 py-6">
@@ -171,6 +181,47 @@ export default function GuideTourPage() {
                 >
                   Try Again
                 </button>
+              </div>
+            )}
+
+            {recognitionState === "recognized" && recognizedArtwork && (
+              <div className="flex flex-col items-center gap-4">
+                <div className="relative w-full">
+                  <img
+                    src={`${UPLOADS_URL}/${recognizedArtwork.image_filename}`}
+                    alt={recognizedArtwork.artwork_name}
+                    className="w-full rounded-lg object-cover"
+                  />
+                  <button
+                    onClick={dismissModal}
+                    className="absolute top-3 left-3 w-8 h-8 bg-white/80 rounded-full flex items-center justify-center text-gray-700 hover:bg-white transition-colors cursor-pointer"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="text-center">
+                  <h2 className="font-serif text-xl font-bold text-gray-900">
+                    {recognizedArtwork.artwork_name}
+                  </h2>
+                  <p className="text-gray-500 text-sm mt-1">
+                    {recognizedArtwork.artist_name}
+                  </p>
+                </div>
+                <div className="flex flex-col items-center gap-3 w-[70%] mt-2">
+                  <button
+                    className="w-full py-2 bg-accent text-white rounded-md text-sm font-medium hover:opacity-80 transition-opacity cursor-pointer"
+                  >
+                    Let's talk about this artwork
+                  </button>
+                  <button
+                    onClick={() => navigate(`/artwork/${recognizedArtwork.id}`)}
+                    className="w-full py-2 border-2 border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:border-gray-500 transition-colors cursor-pointer"
+                  >
+                    Full Details
+                  </button>
+                </div>
               </div>
             )}
           </div>
