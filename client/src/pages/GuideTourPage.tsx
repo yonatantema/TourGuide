@@ -11,6 +11,7 @@ export default function GuideTourPage() {
   const [cameraStatus, setCameraStatus] = useState<CameraStatus>("pending");
   const [recognitionState, setRecognitionState] =
     useState<RecognitionState>("idle");
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
 
   useEffect(() => {
     navigator.mediaDevices
@@ -44,12 +45,14 @@ export default function GuideTourPage() {
     ctx.drawImage(video, 0, 0);
     const imageDataUrl = canvas.toDataURL("image/jpeg", 0.8);
 
+    setCapturedImage(imageDataUrl);
     setRecognitionState("loading");
 
     try {
       const result = await recognizeArtwork(imageDataUrl);
       if (result.recognized) {
         // Success flow will be implemented later
+        setCapturedImage(null);
         setRecognitionState("idle");
       } else {
         setRecognitionState("not-recognized");
@@ -60,6 +63,7 @@ export default function GuideTourPage() {
   };
 
   const dismissModal = () => {
+    setCapturedImage(null);
     setRecognitionState("idle");
   };
 
@@ -95,55 +99,21 @@ export default function GuideTourPage() {
         )}
 
         <div className={cameraStatus === "active" ? "relative" : "hidden"}>
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className="w-full aspect-[16/10] object-cover rounded-xl"
-          />
-
-          {/* Modal overlay */}
-          {showModal && (
-            <div className="absolute inset-0 bg-black/60 rounded-xl flex items-center justify-center">
-              {/* Close button */}
-              <button
-                onClick={dismissModal}
-                className="absolute top-4 right-4 w-8 h-8 bg-accent rounded-full flex items-center justify-center text-white text-sm font-bold cursor-pointer hover:opacity-80 transition-opacity"
-              >
-                &times;
-              </button>
-
-              {recognitionState === "loading" && (
-                <div className="flex flex-col items-center gap-4">
-                  <h2 className="text-white text-xl font-serif font-bold">
-                    Artwork Recognition
-                  </h2>
-                  <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin" />
-                  <p className="text-white/70 text-sm">
-                    Identifying artwork...
-                  </p>
-                </div>
-              )}
-
-              {recognitionState === "not-recognized" && (
-                <div className="flex flex-col items-center gap-4">
-                  <h2 className="text-white text-xl font-serif font-bold">
-                    No Artwork Recognized
-                  </h2>
-                  <p className="text-gray-300 text-sm text-center px-8">
-                    We couldn't identify an artwork from your photo. Try
-                    pointing your camera directly at an artwork.
-                  </p>
-                  <button
-                    onClick={dismissModal}
-                    className="mt-2 px-6 py-2 bg-white text-gray-900 rounded-md text-sm font-medium hover:bg-gray-100 transition-colors cursor-pointer"
-                  >
-                    Try Again
-                  </button>
-                </div>
-              )}
-            </div>
+          {/* Frozen captured image or live video */}
+          {capturedImage ? (
+            <img
+              src={capturedImage}
+              alt="Captured frame"
+              className="w-full aspect-[16/10] object-cover rounded-xl"
+            />
+          ) : (
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="w-full aspect-[16/10] object-cover rounded-xl"
+            />
           )}
 
           {/* Capture button — hidden when modal is visible */}
@@ -164,12 +134,53 @@ export default function GuideTourPage() {
         )}
       </div>
 
-      {/* Retake button below camera when modal is visible */}
+      {/* Full-page dark overlay + modal card */}
       {showModal && (
-        <div className="flex justify-center mt-4">
+        <div className="fixed inset-0 bg-black/60 z-50 flex flex-col items-center justify-center px-6">
+          {/* Modal card */}
+          <div className="bg-cream rounded-xl shadow-lg max-w-sm w-full p-6 relative">
+            {/* Close button */}
+            <button
+              onClick={dismissModal}
+              className="absolute top-4 right-4 w-8 h-8 bg-accent rounded-full flex items-center justify-center text-white text-sm font-bold cursor-pointer hover:opacity-80 transition-opacity"
+            >
+              &times;
+            </button>
+
+            {recognitionState === "loading" && (
+              <div className="flex flex-col items-center gap-4 py-6">
+                <h2 className="text-gray-900 text-xl font-serif font-bold self-start">
+                  Artwork Recognition
+                </h2>
+                <div className="w-12 h-12 border-4 border-gray-300 border-t-gray-700 rounded-full animate-spin mt-4" />
+                <p className="text-gray-500 text-sm mt-2">
+                  Identifying artwork...
+                </p>
+              </div>
+            )}
+
+            {recognitionState === "not-recognized" && (
+              <div className="flex flex-col items-center gap-4 py-6">
+                <h2 className="text-gray-900 text-xl font-serif font-bold self-start">
+                  No Artwork Recognized
+                </h2>
+                <p className="text-gray-400 text-sm text-center mt-2">
+                  Could not match this image to any artwork in our collection
+                </p>
+                <button
+                  onClick={dismissModal}
+                  className="mt-2 px-8 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+                >
+                  Try Again
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Retake button below modal */}
           <button
             onClick={dismissModal}
-            className="px-6 py-2 border-2 border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+            className="mt-6 px-6 py-2 bg-gray-600/80 text-white/80 rounded-md text-sm font-medium hover:bg-gray-600 transition-colors cursor-pointer"
           >
             Retake
           </button>
