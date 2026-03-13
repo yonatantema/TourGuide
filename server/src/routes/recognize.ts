@@ -36,11 +36,11 @@ router.post("/", async (req, res) => {
 
 You will be shown a photograph taken by a museum visitor's camera. Your task is to determine if the photograph shows one of the artworks in the museum's collection.
 
-CRITICAL RULES:
-- You must ONLY match if you are 100% certain the photograph shows one of the listed artworks.
-- If there is ANY doubt whatsoever, respond with {"recognized": false}.
-- Do NOT guess. Do NOT make assumptions. Do NOT hallucinate matches.
-- The photograph may show anything — only match actual artworks you can clearly identify.
+RULES:
+- Focus ONLY on the artwork in the image. Ignore people, hands, faces, walls, frames, and any other surrounding objects.
+- If the image shows a screen, painting, or print displaying an artwork, focus only on the artwork content shown — disregard the device or frame around it.
+- Match if you are at least 80% confident the photograph shows one of the listed artworks. You do not need absolute certainty, but you should have high confidence.
+- Do NOT hallucinate matches. Only match artworks from the list below.
 
 The museum's collection:
 ${artworkList}
