@@ -38,7 +38,7 @@ export default function ChooseGuidePage() {
       ) : guides.length === 0 ? (
         <p className="text-center text-gray-500 mt-20">No guides available yet.</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-3xl mx-auto">
           {guides.map((guide) => (
             <Link
               key={guide.id}
