@@ -175,13 +175,6 @@ export default function GuideTourPage() {
             )}
           </div>
 
-          {/* Retake button below modal */}
-          <button
-            onClick={dismissModal}
-            className="mt-6 px-6 py-2 bg-gray-600/80 text-white/80 rounded-md text-sm font-medium hover:bg-gray-600 transition-colors cursor-pointer"
-          >
-            Retake
-          </button>
         </div>
       )}
     </div>
