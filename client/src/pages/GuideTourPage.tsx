@@ -99,20 +99,18 @@ export default function GuideTourPage() {
         )}
 
         <div className={cameraStatus === "active" ? "relative" : "hidden"}>
-          {/* Frozen captured image or live video */}
-          {capturedImage ? (
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="w-full aspect-[16/10] object-cover rounded-xl"
+          />
+          {capturedImage && (
             <img
               src={capturedImage}
               alt="Captured frame"
-              className="w-full aspect-[16/10] object-cover rounded-xl"
-            />
-          ) : (
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-full aspect-[16/10] object-cover rounded-xl"
+              className="absolute inset-0 w-full h-full object-cover rounded-xl"
             />
           )}
 
