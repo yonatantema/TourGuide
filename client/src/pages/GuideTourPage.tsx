@@ -55,6 +55,12 @@ export default function GuideTourPage() {
       if (result.recognized && result.artworkId) {
         try {
           const artwork = await getArtwork(result.artworkId);
+          await new Promise<void>((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve();
+            img.onerror = () => reject();
+            img.src = `${UPLOADS_URL}/${artwork.image_filename}`;
+          });
           setRecognizedArtwork(artwork);
           setRecognitionState("recognized");
         } catch {
