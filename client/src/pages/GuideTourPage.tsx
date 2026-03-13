@@ -56,7 +56,6 @@ export default function GuideTourPage() {
         try {
           const artwork = await getArtwork(result.artworkId);
           setRecognizedArtwork(artwork);
-          setCapturedImage(null);
           setRecognitionState("recognized");
         } catch {
           setRecognitionState("not-recognized");
