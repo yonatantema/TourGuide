@@ -190,12 +190,12 @@ export default function GuideTourPage() {
             )}
 
             {recognitionState === "recognized" && recognizedArtwork && (
-              <div className="flex flex-col items-center gap-4 overflow-y-auto min-h-0">
-                <div className="relative w-full flex-shrink-0">
+              <div className="flex flex-col items-center gap-4 overflow-hidden min-h-0">
+                <div className="relative w-full min-h-0">
                   <img
                     src={`${UPLOADS_URL}/${recognizedArtwork.image_filename}`}
                     alt={recognizedArtwork.artwork_name}
-                    className="w-full max-h-[50vh] rounded-lg object-contain"
+                    className="w-full h-full rounded-lg object-contain"
                   />
                   <button
                     onClick={dismissModal}
@@ -206,7 +206,7 @@ export default function GuideTourPage() {
                     </svg>
                   </button>
                 </div>
-                <div className="text-center">
+                <div className="text-center flex-shrink-0">
                   <h2 className="font-serif text-xl font-bold text-gray-900">
                     {recognizedArtwork.artwork_name}
                   </h2>
@@ -214,7 +214,7 @@ export default function GuideTourPage() {
                     {recognizedArtwork.artist_name}
                   </p>
                 </div>
-                <div className="flex flex-col items-center gap-3 w-[70%] mt-2">
+                <div className="flex flex-col items-center gap-3 w-[70%] mt-2 flex-shrink-0">
                   <button
                     className="w-full py-2 bg-accent text-white rounded-md text-sm font-medium hover:opacity-80 transition-opacity cursor-pointer"
                   >
