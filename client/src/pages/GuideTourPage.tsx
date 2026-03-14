@@ -98,13 +98,13 @@ export default function GuideTourPage() {
 
       <div className="bg-cream rounded-xl overflow-hidden relative">
         {cameraStatus === "pending" && (
-          <div className="bg-gray-200 flex items-center justify-center aspect-[16/9] rounded-xl">
+          <div className="bg-gray-200 flex items-center justify-center aspect-[3/4] md:aspect-[16/9] rounded-xl">
             <p className="text-gray-500">Camera access required</p>
           </div>
         )}
 
         {cameraStatus === "denied" && (
-          <div className="bg-gray-200 flex items-center justify-center aspect-[16/9] rounded-xl">
+          <div className="bg-gray-200 flex items-center justify-center aspect-[3/4] md:aspect-[16/9] rounded-xl">
             <p className="text-gray-500">
               Camera access was denied. Please allow camera access and reload.
             </p>
@@ -117,7 +117,7 @@ export default function GuideTourPage() {
             autoPlay
             playsInline
             muted
-            className="w-full aspect-[16/9] object-cover rounded-xl"
+            className="w-full aspect-[3/4] md:aspect-[16/9] object-cover rounded-xl"
           />
           {capturedImage && (
             <img
