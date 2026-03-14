@@ -83,7 +83,7 @@ export default function GuideTourPage() {
   const showModal = recognitionState !== "idle";
 
   return (
-    <div className="min-h-screen px-6 py-10 max-w-5xl mx-auto flex flex-col">
+    <div className="min-h-screen px-6 py-10 max-w-4xl mx-auto flex flex-col">
       <div className="flex items-start justify-between mb-8">
         <h1 className="font-serif text-3xl md:text-4xl text-gray-900">
           Museum Guide
@@ -98,13 +98,13 @@ export default function GuideTourPage() {
 
       <div className="bg-cream rounded-xl overflow-hidden relative">
         {cameraStatus === "pending" && (
-          <div className="bg-gray-200 flex items-center justify-center aspect-[4/3] rounded-xl">
+          <div className="bg-gray-200 flex items-center justify-center aspect-[16/9] rounded-xl">
             <p className="text-gray-500">Camera access required</p>
           </div>
         )}
 
         {cameraStatus === "denied" && (
-          <div className="bg-gray-200 flex items-center justify-center aspect-[4/3] rounded-xl">
+          <div className="bg-gray-200 flex items-center justify-center aspect-[16/9] rounded-xl">
             <p className="text-gray-500">
               Camera access was denied. Please allow camera access and reload.
             </p>
@@ -117,7 +117,7 @@ export default function GuideTourPage() {
             autoPlay
             playsInline
             muted
-            className="w-full aspect-[4/3] object-cover rounded-xl"
+            className="w-full aspect-[16/9] object-cover rounded-xl"
           />
           {capturedImage && (
             <img
