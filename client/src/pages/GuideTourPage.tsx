@@ -83,7 +83,7 @@ export default function GuideTourPage() {
   const showModal = recognitionState !== "idle";
 
   return (
-    <div className="min-h-screen px-6 py-10 max-w-4xl mx-auto flex flex-col">
+    <div className="min-h-screen px-6 py-10 max-w-[62rem] mx-auto flex flex-col">
       <div className="flex items-start justify-between mb-8">
         <h1 className="font-serif text-3xl md:text-4xl text-gray-900">
           Museum Guide
