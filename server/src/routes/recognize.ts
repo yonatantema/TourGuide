@@ -88,7 +88,7 @@ router.post("/", async (req, res) => {
     const message = response.choices[0]?.message;
     const toolCall = message?.tool_calls?.[0];
 
-    if (!toolCall || toolCall.function.name !== "identify_artwork") {
+    if (!toolCall || toolCall.type !== "function" || toolCall.function.name !== "identify_artwork") {
       return res.json({ recognized: false });
     }
 
