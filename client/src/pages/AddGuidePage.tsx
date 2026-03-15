@@ -64,7 +64,7 @@ export default function AddGuidePage() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Guide Personality & General Instructions</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Guide Personality and General Instructions</label>
           <p className="text-xs text-gray-500 mb-2">Define the guide's style and personality</p>
           <textarea
             required

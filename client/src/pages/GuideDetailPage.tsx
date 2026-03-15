@@ -69,7 +69,7 @@ export default function GuideDetailPage() {
         <p className="text-gray-500 mb-6">{guide.description}</p>
 
         <div className="mb-6">
-          <h2 className="font-serif text-xl font-semibold text-gray-900 mb-1">Guide Personality & General Instructions</h2>
+          <h2 className="font-serif text-xl font-semibold text-gray-900 mb-1">Guide Personality and General Instructions</h2>
           <p className="text-xs text-gray-500 mb-3">Define the guide's style and personality</p>
           <div className="border-2 border-gray-300 rounded-lg p-4 text-gray-600 leading-relaxed whitespace-pre-wrap">
             {guide.personality}
