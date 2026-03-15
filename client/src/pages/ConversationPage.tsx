@@ -122,6 +122,12 @@ export default function ConversationModal({
     nextPlayTimeRef.current = startTime + buffer.duration;
   };
 
+  const stopPlayback = () => {
+    playbackCtxRef.current?.close();
+    playbackCtxRef.current = null;
+    nextPlayTimeRef.current = 0;
+  };
+
   const handleStartConversation = async () => {
     setStatus("connecting");
 
@@ -275,10 +281,16 @@ export default function ConversationModal({
   };
 
   const handleMicClick = () => {
-    if (status === "ready") {
-      startRecording();
-    } else if (status === "recording") {
+    if (status === "recording") {
       stopRecording();
+    } else if (status === "ready" || status === "playing" || status === "processing") {
+      // Interrupt AI: cancel server response, stop playback, start recording
+      const ws = wsRef.current;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "response.cancel" }));
+      }
+      stopPlayback();
+      startRecording();
     }
   };
 
@@ -287,7 +299,7 @@ export default function ConversationModal({
     onClose();
   };
 
-  const micActive = status === "ready" || status === "recording";
+  const micActive = status === "ready" || status === "recording" || status === "playing" || status === "processing";
   const showEndButton = status !== "idle";
 
   return (
@@ -370,9 +382,9 @@ export default function ConversationModal({
             </button>
             <p className="text-gray-500 text-sm">
               {status === "ready" && "Click to talk"}
-              {status === "recording" && "Click to stop"}
+              {status === "recording" && "Listening... Click to send"}
               {status === "processing" && "Thinking..."}
-              {status === "playing" && "Speaking..."}
+              {status === "playing" && "Speaking... Click to interrupt"}
             </p>
           </div>
         )}
