@@ -12,7 +12,6 @@ import EditGuidePage from "./pages/EditGuidePage";
 import ChooseGuidePage from "./pages/ChooseGuidePage";
 import GuideTourPage from "./pages/GuideTourPage";
 import PublicArtworkPage from "./pages/PublicArtworkPage";
-import ConversationPage from "./pages/ConversationPage";
 
 export default function App() {
   return (
@@ -26,7 +25,6 @@ export default function App() {
         <Route path="/gallery/:id/edit" element={<EditArtworkPage />} />
         <Route path="/guides" element={<ChooseGuidePage />} />
         <Route path="/guides/:id" element={<GuideTourPage />} />
-        <Route path="/guides/:id/conversation" element={<ConversationPage />} />
         <Route path="/artwork/:id" element={<PublicArtworkPage />} />
         <Route path="/guidelines" element={<GuidelinesPage />} />
         <Route path="/guidelines/add" element={<AddGuidePage />} />
