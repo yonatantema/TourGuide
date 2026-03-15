@@ -126,10 +126,9 @@ export default function ConversationModal({
     setStatus("connecting");
 
     try {
-      // Resume any suspended AudioContext (needed for iOS/Safari)
-      if (playbackCtxRef.current?.state === "suspended") {
-        await playbackCtxRef.current.resume();
-      }
+      // Request mic access immediately so the browser prompts the user
+      const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      micStreamRef.current = micStream;
 
       const { clientSecret } = await createRealtimeSession(guideId, artwork.id);
 
@@ -203,8 +202,12 @@ export default function ConversationModal({
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      micStreamRef.current = stream;
+      // Reuse existing mic stream or request a new one
+      let stream = micStreamRef.current;
+      if (!stream || !stream.active) {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        micStreamRef.current = stream;
+      }
 
       const ctx = new AudioContext();
       audioContextRef.current = ctx;
@@ -233,8 +236,7 @@ export default function ConversationModal({
   const stopRecording = () => {
     processorRef.current?.disconnect();
     processorRef.current = null;
-    micStreamRef.current?.getTracks().forEach((t) => t.stop());
-    micStreamRef.current = null;
+    // Keep mic stream alive for reuse — only close AudioContext
     audioContextRef.current?.close();
     audioContextRef.current = null;
 
@@ -290,7 +292,7 @@ export default function ConversationModal({
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex flex-col items-center justify-center px-6">
-      <div className="bg-cream rounded-xl shadow-lg max-w-sm max-h-[80vh] w-full p-6 relative flex flex-col items-center gap-4 overflow-hidden">
+      <div className="bg-cream rounded-xl shadow-lg max-w-lg max-h-[80vh] w-full p-3 relative flex flex-col items-center gap-4 overflow-hidden">
         {/* Artwork image */}
         <div className="w-full min-h-0">
           <img

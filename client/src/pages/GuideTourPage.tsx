@@ -82,7 +82,7 @@ export default function GuideTourPage() {
     setRecognitionState("idle");
   };
 
-  const showModal = recognitionState !== "idle";
+  const showModal = recognitionState !== "idle" && recognitionState !== "conversation";
 
   return (
     <div className="min-h-screen px-6 py-10 max-w-[62rem] mx-auto flex flex-col">
@@ -160,7 +160,7 @@ export default function GuideTourPage() {
       {showModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex flex-col items-center justify-center px-6">
           {/* Modal card */}
-          <div className="bg-cream rounded-xl shadow-lg max-w-sm max-h-[80vh] w-full p-6 relative flex flex-col">
+          <div className="bg-cream rounded-xl shadow-lg max-w-lg max-h-[80vh] w-full p-3 relative flex flex-col">
             {/* Close button — hidden on recognized state */}
             {recognitionState !== "recognized" && (
               <button
