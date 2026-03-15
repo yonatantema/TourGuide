@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { recognizeArtwork, getArtwork, Artwork, UPLOADS_URL } from "../services/artworkApi";
 
 type CameraStatus = "pending" | "active" | "denied";
 type RecognitionState = "idle" | "loading" | "not-recognized" | "recognized";
 
 export default function GuideTourPage() {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -225,6 +226,7 @@ export default function GuideTourPage() {
                 </div>
                 <div className="flex flex-col items-center gap-3 w-[70%] mt-2 flex-shrink-0">
                   <button
+                    onClick={() => navigate(`/guides/${id}/conversation`, { state: { artwork: recognizedArtwork } })}
                     className="w-full py-2 bg-accent text-white rounded-md text-sm font-medium hover:opacity-80 transition-opacity cursor-pointer"
                   >
                     Let's talk about this artwork
