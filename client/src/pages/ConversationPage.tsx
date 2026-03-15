@@ -157,6 +157,8 @@ export default function ConversationModal({
         const data = JSON.parse(event.data);
 
         if (data.type === "response.audio.delta") {
+          // Don't play audio while user is recording
+          if (statusRef.current === "recording") return;
           const buf = base64ToArrayBuffer(data.delta);
           const pcm16 = new Int16Array(buf);
           const float32 = pcm16ToFloat32(pcm16);
@@ -164,6 +166,8 @@ export default function ConversationModal({
         }
 
         if (data.type === "response.audio.done") {
+          // Only transition to ready if still in playing state
+          if (statusRef.current !== "playing") return;
           const ctx = playbackCtxRef.current;
           if (ctx) {
             const delay = Math.max(
@@ -182,7 +186,10 @@ export default function ConversationModal({
 
         if (data.type === "error") {
           console.error("Realtime API error:", data.error);
-          setStatus("error");
+          // Ignore errors while recording — likely from response.cancel
+          if (statusRef.current !== "recording") {
+            setStatus("error");
+          }
         }
       };
 

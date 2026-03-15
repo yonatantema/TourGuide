@@ -160,7 +160,7 @@ export default function GuideTourPage() {
       {showModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex flex-col items-center justify-center px-6">
           {/* Modal card */}
-          <div className="bg-cream rounded-xl shadow-lg w-[380px] h-[80vh] relative flex flex-col overflow-hidden">
+          <div className={`bg-cream rounded-xl shadow-lg w-[380px] relative flex flex-col overflow-hidden ${recognitionState === "recognized" ? "h-[80vh]" : ""}`}>
             {/* Close button — hidden on recognized state */}
             {recognitionState !== "recognized" && (
               <div className="p-6">
