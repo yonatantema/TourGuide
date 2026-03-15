@@ -8,6 +8,7 @@ export default function AddGuidePage() {
   const [description, setDescription] = useState("");
   const [personality, setPersonality] = useState("");
   const [responseGuidelines, setResponseGuidelines] = useState("");
+  const [voice, setVoice] = useState("coral");
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -19,6 +20,7 @@ export default function AddGuidePage() {
         description,
         personality,
         response_guidelines: responseGuidelines,
+        voice,
       });
       navigate(`/guidelines/${guide.id}`);
     } catch (err) {
@@ -84,6 +86,19 @@ export default function AddGuidePage() {
             onChange={(e) => setResponseGuidelines(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent resize-vertical"
           />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Voice</label>
+          <p className="text-xs text-gray-500 mb-2">Select the voice for this guide</p>
+          <select
+            value={voice}
+            onChange={(e) => setVoice(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent bg-white"
+          >
+            <option value="coral">Coral</option>
+            <option value="ash">Ash</option>
+            <option value="marin">Marin</option>
+          </select>
         </div>
         <button
           type="submit"

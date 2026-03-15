@@ -42,7 +42,7 @@ ${guide.response_guidelines}
 
     const session = await openai.beta.realtime.sessions.create({
       model: "gpt-4o-realtime-preview-2024-12-17",
-      voice: "coral",
+      voice: guide.voice || "coral",
       modalities: ["text", "audio"],
       instructions,
       input_audio_format: "pcm16",
