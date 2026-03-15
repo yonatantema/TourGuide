@@ -160,53 +160,55 @@ export default function GuideTourPage() {
       {showModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex flex-col items-center justify-center px-6">
           {/* Modal card */}
-          <div className="bg-cream rounded-xl shadow-lg max-w-lg max-h-[80vh] w-full p-3 relative flex flex-col">
+          <div className="bg-cream rounded-xl shadow-lg max-w-lg max-h-[80vh] w-full relative flex flex-col overflow-hidden">
             {/* Close button — hidden on recognized state */}
             {recognitionState !== "recognized" && (
-              <button
-                onClick={dismissModal}
-                className="absolute top-4 right-4 w-8 h-8 bg-accent rounded-full flex items-center justify-center text-white text-sm font-bold cursor-pointer hover:opacity-80 transition-opacity"
-              >
-                &times;
-              </button>
-            )}
-
-            {recognitionState === "loading" && (
-              <div className="flex flex-col items-center gap-4 py-6">
-                <h2 className="text-gray-900 text-xl font-serif font-bold self-start">
-                  Artwork Recognition
-                </h2>
-                <div className="w-12 h-12 border-4 border-gray-300 border-t-gray-700 rounded-full animate-spin mt-4" />
-                <p className="text-gray-500 text-sm mt-2">
-                  Identifying artwork...
-                </p>
-              </div>
-            )}
-
-            {recognitionState === "not-recognized" && (
-              <div className="flex flex-col items-center gap-4 py-6">
-                <h2 className="text-gray-900 text-xl font-serif font-bold self-start">
-                  No Artwork Recognized
-                </h2>
-                <p className="text-gray-400 text-sm text-center mt-2">
-                  Could not match this image to any artwork in our collection
-                </p>
+              <div className="p-6">
                 <button
                   onClick={dismissModal}
-                  className="mt-2 px-8 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+                  className="absolute top-4 right-4 w-8 h-8 bg-accent rounded-full flex items-center justify-center text-white text-sm font-bold cursor-pointer hover:opacity-80 transition-opacity z-10"
                 >
-                  Try Again
+                  &times;
                 </button>
+
+                {recognitionState === "loading" && (
+                  <div className="flex flex-col items-center gap-4 py-6">
+                    <h2 className="text-gray-900 text-xl font-serif font-bold self-start">
+                      Artwork Recognition
+                    </h2>
+                    <div className="w-12 h-12 border-4 border-gray-300 border-t-gray-700 rounded-full animate-spin mt-4" />
+                    <p className="text-gray-500 text-sm mt-2">
+                      Identifying artwork...
+                    </p>
+                  </div>
+                )}
+
+                {recognitionState === "not-recognized" && (
+                  <div className="flex flex-col items-center gap-4 py-6">
+                    <h2 className="text-gray-900 text-xl font-serif font-bold self-start">
+                      No Artwork Recognized
+                    </h2>
+                    <p className="text-gray-400 text-sm text-center mt-2">
+                      Could not match this image to any artwork in our collection
+                    </p>
+                    <button
+                      onClick={dismissModal}
+                      className="mt-2 px-8 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+                    >
+                      Try Again
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
             {recognitionState === "recognized" && recognizedArtwork && (
-              <div className="flex flex-col items-center gap-4 overflow-hidden min-h-0">
-                <div className="relative w-full min-h-0">
+              <div className="flex flex-col min-h-0">
+                <div className="relative min-h-0">
                   <img
                     src={`${UPLOADS_URL}/${recognizedArtwork.image_filename}`}
                     alt={recognizedArtwork.artwork_name}
-                    className="w-full h-full rounded-lg object-contain"
+                    className="w-full h-full object-contain"
                   />
                   <button
                     onClick={dismissModal}
@@ -217,27 +219,29 @@ export default function GuideTourPage() {
                     </svg>
                   </button>
                 </div>
-                <div className="text-center flex-shrink-0">
-                  <h2 className="font-serif text-xl font-bold text-gray-900">
-                    {recognizedArtwork.artwork_name}
-                  </h2>
-                  <p className="text-gray-500 text-sm mt-1">
-                    {recognizedArtwork.artist_name}
-                  </p>
-                </div>
-                <div className="flex flex-col items-center gap-3 w-[70%] mt-2 flex-shrink-0">
-                  <button
-                    onClick={() => setRecognitionState("conversation")}
-                    className="w-full py-2 bg-accent text-white rounded-md text-sm font-medium hover:opacity-80 transition-opacity cursor-pointer"
-                  >
-                    Let's talk about this artwork
-                  </button>
-                  <button
-                    onClick={() => navigate(`/artwork/${recognizedArtwork.id}`)}
-                    className="w-full py-2 border-2 border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:border-gray-500 transition-colors cursor-pointer"
-                  >
-                    Full Details
-                  </button>
+                <div className="flex-shrink-0 px-5 py-4">
+                  <div className="text-center mb-3">
+                    <h2 className="font-serif text-xl font-bold text-gray-900">
+                      {recognizedArtwork.artwork_name}
+                    </h2>
+                    <p className="text-gray-500 text-sm mt-1">
+                      {recognizedArtwork.artist_name}
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    <button
+                      onClick={() => setRecognitionState("conversation")}
+                      className="w-full py-2.5 bg-accent text-white rounded-md text-sm font-medium hover:opacity-80 transition-opacity cursor-pointer"
+                    >
+                      Let's talk about this artwork
+                    </button>
+                    <button
+                      onClick={() => navigate(`/artwork/${recognizedArtwork.id}`)}
+                      className="w-full py-2.5 border-2 border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:border-gray-500 transition-colors cursor-pointer"
+                    >
+                      Full Details
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
