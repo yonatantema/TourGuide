@@ -8,7 +8,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 router.post("/session", async (req, res) => {
   try {
-    const { guideId, artworkId } = req.body;
+    const { guideId, artworkId, language } = req.body;
 
     if (!guideId || !artworkId) {
       return res.status(400).json({ error: "guideId and artworkId are required" });
@@ -38,7 +38,8 @@ ${guide.response_guidelines}
 - Speak naturally and friendly
 - Focus on the most interesting or relevant details
 - If you don't know something, say it clearly
-- Start with a brief greeting and mention the artwork title`;
+- Start with a brief greeting and mention the artwork title
+- You MUST respond entirely in ${language || "english"}. Every word you say must be in ${language || "english"}.`;
 
     const session = await openai.beta.realtime.sessions.create({
       model: "gpt-4o-realtime-preview-2024-12-17",

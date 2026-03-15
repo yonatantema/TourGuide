@@ -65,12 +65,14 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
 interface ConversationModalProps {
   artwork: Artwork;
   guideId: number;
+  language: string;
   onClose: () => void;
 }
 
 export default function ConversationModal({
   artwork,
   guideId,
+  language,
   onClose,
 }: ConversationModalProps) {
   const [status, setStatus] = useState<ConversationStatus>("idle");
@@ -136,7 +138,7 @@ export default function ConversationModal({
       const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       micStreamRef.current = micStream;
 
-      const { clientSecret } = await createRealtimeSession(guideId, artwork.id);
+      const { clientSecret } = await createRealtimeSession(guideId, artwork.id, language);
 
       const ws = new WebSocket(
         "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17",

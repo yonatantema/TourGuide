@@ -16,6 +16,7 @@ export default function GuideTourPage() {
     useState<RecognitionState>("idle");
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [recognizedArtwork, setRecognizedArtwork] = useState<Artwork | null>(null);
+  const [language, setLanguage] = useState("english");
 
   useEffect(() => {
     navigator.mediaDevices
@@ -229,6 +230,14 @@ export default function GuideTourPage() {
                     </p>
                   </div>
                   <div className="flex flex-col gap-3">
+                    <select
+                      value={language}
+                      onChange={(e) => setLanguage(e.target.value)}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent bg-white"
+                    >
+                      <option value="english">English</option>
+                      <option value="french">French</option>
+                    </select>
                     <button
                       onClick={() => setRecognitionState("conversation")}
                       className="w-full py-2.5 bg-accent text-white rounded-md text-sm font-medium hover:opacity-80 transition-opacity cursor-pointer"
@@ -255,6 +264,7 @@ export default function GuideTourPage() {
         <ConversationModal
           artwork={recognizedArtwork}
           guideId={Number(id)}
+          language={language}
           onClose={dismissModal}
         />
       )}
