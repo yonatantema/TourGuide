@@ -1,4 +1,3 @@
-import "dotenv/config";
 import pool from "../db";
 import { analyzeArtworkImage } from "../services/visualAnalysis";
 
