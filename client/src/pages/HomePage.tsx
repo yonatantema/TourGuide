@@ -6,7 +6,7 @@ export default function HomePage() {
       <div className="max-w-2xl">
         <h1 className="font-serif text-5xl md:text-6xl font-bold text-gray-900 mb-6">
           Welcome to the Museum{" "}
-          <span className="text-accent">AI tour guide</span>
+          <span className="text-accent">AI Tour Guide</span>
         </h1>
         <p className="text-lg text-gray-600 mb-10">
           Unlock The Unseen. Discover the collections with the AI Museum guide
