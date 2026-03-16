@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import pool from "../db";
 import upload from "../middleware/upload";
+import { analyzeArtworkImage } from "../services/visualAnalysis";
 import fs from "fs";
 import path from "path";
 
@@ -44,7 +45,9 @@ router.post("/", upload.single("image"), async (req: Request, res: Response) => 
       "INSERT INTO artworks (artist_name, artwork_name, artwork_info, image_filename) VALUES ($1, $2, $3, $4) RETURNING *",
       [artist_name, artwork_name, artwork_info, image_filename]
     );
-    res.status(201).json(result.rows[0]);
+    const artwork = result.rows[0];
+    analyzeArtworkImage(artwork.image_filename, artwork.id).catch(() => {});
+    res.status(201).json(artwork);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to create artwork" });
@@ -83,7 +86,11 @@ router.put("/:id", upload.single("image"), async (req: Request, res: Response) =
           "UPDATE artworks SET artist_name = $1, artwork_name = $2, artwork_info = $3, image_filename = $4 WHERE id = $5 RETURNING *",
           [artist_name, artwork_name, artwork_info, image_filename, id]
         );
-    res.json(result.rows[0]);
+    const artwork = result.rows[0];
+    if (req.file) {
+      analyzeArtworkImage(artwork.image_filename, artwork.id).catch(() => {});
+    }
+    res.json(artwork);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to update artwork" });
