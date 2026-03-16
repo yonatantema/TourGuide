@@ -14,13 +14,16 @@ router.post("/session", async (req, res) => {
       return res.status(400).json({ error: "guideId and artworkId are required" });
     }
 
-    const guideResult = await pool.query("SELECT * FROM guides WHERE id = $1", [guideId]);
+    const [guideResult, artworkResult] = await Promise.all([
+      pool.query("SELECT * FROM guides WHERE id = $1", [guideId]),
+      pool.query("SELECT * FROM artworks WHERE id = $1", [artworkId]),
+    ]);
+
     const guide = guideResult.rows[0];
     if (!guide) {
       return res.status(404).json({ error: "Guide not found" });
     }
 
-    const artworkResult = await pool.query("SELECT * FROM artworks WHERE id = $1", [artworkId]);
     const artwork = artworkResult.rows[0];
     if (!artwork) {
       return res.status(404).json({ error: "Artwork not found" });
