@@ -78,6 +78,15 @@ export default function ArtworkDetailPage() {
             {artwork.artwork_info}
           </div>
         </div>
+        <div className="flex items-center gap-2 mt-4">
+          <input
+            type="checkbox"
+            checked={!!artwork.visual_analysis}
+            readOnly
+            className="h-4 w-4 accent-accent pointer-events-none"
+          />
+          <span className="text-sm text-gray-400">Vision Analyzed</span>
+        </div>
       </div>
     </div>
   );

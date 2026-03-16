@@ -86,11 +86,7 @@ router.put("/:id", upload.single("image"), async (req: Request, res: Response) =
           "UPDATE artworks SET artist_name = $1, artwork_name = $2, artwork_info = $3, image_filename = $4 WHERE id = $5 RETURNING *",
           [artist_name, artwork_name, artwork_info, image_filename, id]
         );
-    const artwork = result.rows[0];
-    if (req.file) {
-      analyzeArtworkImage(artwork.image_filename, artwork.id).catch(() => {});
-    }
-    res.json(artwork);
+    res.json(result.rows[0]);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to update artwork" });

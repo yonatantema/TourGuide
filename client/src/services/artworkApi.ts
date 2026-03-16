@@ -8,6 +8,7 @@ export interface Artwork {
   artwork_name: string;
   artwork_info: string;
   image_filename: string;
+  visual_analysis: string | null;
   created_at: string;
 }
 
