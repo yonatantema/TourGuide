@@ -74,10 +74,15 @@ router.put("/:id", upload.single("image"), async (req: Request, res: Response) =
       image_filename = req.file.filename;
     }
 
-    const result = await pool.query(
-      "UPDATE artworks SET artist_name = $1, artwork_name = $2, artwork_info = $3, image_filename = $4 WHERE id = $5 RETURNING *",
-      [artist_name, artwork_name, artwork_info, image_filename, id]
-    );
+    const result = req.file
+      ? await pool.query(
+          "UPDATE artworks SET artist_name = $1, artwork_name = $2, artwork_info = $3, image_filename = $4, visual_analysis = NULL WHERE id = $5 RETURNING *",
+          [artist_name, artwork_name, artwork_info, image_filename, id]
+        )
+      : await pool.query(
+          "UPDATE artworks SET artist_name = $1, artwork_name = $2, artwork_info = $3, image_filename = $4 WHERE id = $5 RETURNING *",
+          [artist_name, artwork_name, artwork_info, image_filename, id]
+        );
     res.json(result.rows[0]);
   } catch (err) {
     console.error(err);
