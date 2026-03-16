@@ -4,7 +4,7 @@ import path from "path";
 import pool from "../db";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const uploadsDir = path.join(__dirname, "..", "uploads");
+const uploadsDir = path.join(__dirname, "../../uploads");
 
 export async function analyzeArtworkImage(
   imageFilename: string,
