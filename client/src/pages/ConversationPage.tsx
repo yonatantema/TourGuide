@@ -83,7 +83,9 @@ export default function ConversationModal({
   const micStreamRef = useRef<MediaStream | null>(null);
   const audioChunksRef = useRef<Int16Array[]>([]);
   const playbackCtxRef = useRef<AudioContext | null>(null);
-  const nextPlayTimeRef = useRef(0);
+  const playbackProcessorRef = useRef<ScriptProcessorNode | null>(null);
+  const playbackBufferRef = useRef<Float32Array[]>([]);
+  const playbackOffsetRef = useRef(0);
   const statusRef = useRef<ConversationStatus>("idle");
 
   useEffect(() => {
@@ -99,35 +101,70 @@ export default function ConversationModal({
     processorRef.current = null;
     audioContextRef.current?.close();
     audioContextRef.current = null;
+    playbackProcessorRef.current?.disconnect();
+    playbackProcessorRef.current = null;
     playbackCtxRef.current?.close();
     playbackCtxRef.current = null;
+    playbackBufferRef.current = [];
+    playbackOffsetRef.current = 0;
     audioChunksRef.current = [];
-    nextPlayTimeRef.current = 0;
   }, []);
 
   useEffect(() => {
     return cleanup;
   }, [cleanup]);
 
-  const playAudioChunk = (float32: Float32Array) => {
-    if (!playbackCtxRef.current) {
-      playbackCtxRef.current = new AudioContext({ sampleRate: 24000 });
-    }
-    const ctx = playbackCtxRef.current;
-    const buffer = ctx.createBuffer(1, float32.length, 24000);
-    buffer.getChannelData(0).set(float32);
-    const source = ctx.createBufferSource();
-    source.buffer = buffer;
-    source.connect(ctx.destination);
-    const startTime = Math.max(ctx.currentTime, nextPlayTimeRef.current);
-    source.start(startTime);
-    nextPlayTimeRef.current = startTime + buffer.duration;
+  const ensurePlaybackStream = () => {
+    if (playbackCtxRef.current) return;
+    const ctx = new AudioContext({ sampleRate: 24000 });
+    playbackCtxRef.current = ctx;
+    const processor = ctx.createScriptProcessor(2048, 1, 1);
+    playbackProcessorRef.current = processor;
+
+    processor.onaudioprocess = (e) => {
+      const output = e.outputBuffer.getChannelData(0);
+      let written = 0;
+      while (written < output.length && playbackBufferRef.current.length > 0) {
+        const chunk = playbackBufferRef.current[0];
+        const offset = playbackOffsetRef.current;
+        const remaining = chunk.length - offset;
+        const needed = output.length - written;
+        if (remaining <= needed) {
+          output.set(chunk.subarray(offset), written);
+          written += remaining;
+          playbackBufferRef.current.shift();
+          playbackOffsetRef.current = 0;
+        } else {
+          output.set(chunk.subarray(offset, offset + needed), written);
+          written += needed;
+          playbackOffsetRef.current = offset + needed;
+        }
+      }
+      for (let i = written; i < output.length; i++) {
+        output[i] = 0;
+      }
+    };
+
+    // Silent input to keep the processor firing
+    const silent = ctx.createConstantSource();
+    silent.offset.value = 0;
+    silent.connect(processor);
+    processor.connect(ctx.destination);
+    silent.start();
+  };
+
+  const enqueueAudio = (float32: Float32Array) => {
+    ensurePlaybackStream();
+    playbackBufferRef.current.push(float32);
   };
 
   const stopPlayback = () => {
+    playbackProcessorRef.current?.disconnect();
+    playbackProcessorRef.current = null;
     playbackCtxRef.current?.close();
     playbackCtxRef.current = null;
-    nextPlayTimeRef.current = 0;
+    playbackBufferRef.current = [];
+    playbackOffsetRef.current = 0;
   };
 
   const handleStartConversation = async () => {
@@ -164,26 +201,21 @@ export default function ConversationModal({
           const buf = base64ToArrayBuffer(data.delta);
           const pcm16 = new Int16Array(buf);
           const float32 = pcm16ToFloat32(pcm16);
-          playAudioChunk(float32);
+          enqueueAudio(float32);
         }
 
         if (data.type === "response.audio.done") {
           // Only transition to ready if still in playing state
           if (statusRef.current !== "playing") return;
-          const ctx = playbackCtxRef.current;
-          if (ctx) {
-            const delay = Math.max(
-              0,
-              nextPlayTimeRef.current - ctx.currentTime
-            );
-            setTimeout(() => {
+          // Wait for the playback buffer to drain before transitioning
+          const checkDrained = setInterval(() => {
+            if (playbackBufferRef.current.length === 0) {
+              clearInterval(checkDrained);
               if (statusRef.current === "playing") {
                 setStatus("ready");
               }
-            }, delay * 1000 + 100);
-          } else {
-            setStatus("ready");
-          }
+            }
+          }, 100);
         }
 
         if (data.type === "error") {
