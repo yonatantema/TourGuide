@@ -2,11 +2,18 @@ import pool from "../db";
 import { analyzeArtworkImage } from "../services/visualAnalysis";
 
 async function backfill() {
-  const { rows: artworks } = await pool.query(
-    "SELECT id, artwork_name, image_filename FROM artworks WHERE visual_analysis IS NULL"
-  );
+  const targetId = process.argv[2];
 
-  console.log(`Found ${artworks.length} artworks without visual analysis.`);
+  const { rows: artworks } = targetId
+    ? await pool.query(
+        "SELECT id, artwork_name, image_filename FROM artworks WHERE id = $1",
+        [targetId]
+      )
+    : await pool.query(
+        "SELECT id, artwork_name, image_filename FROM artworks WHERE visual_analysis IS NULL"
+      );
+
+  console.log(`Found ${artworks.length} artwork(s) to analyze.`);
 
   for (const artwork of artworks) {
     console.log(`Analyzing: ${artwork.artwork_name} (id=${artwork.id})...`);
