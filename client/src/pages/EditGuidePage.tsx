@@ -10,6 +10,7 @@ export default function EditGuidePage() {
   const [personality, setPersonality] = useState("");
   const [responseGuidelines, setResponseGuidelines] = useState("");
   const [voice, setVoice] = useState("coral");
+  const [knowledge, setKnowledge] = useState("internal");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -22,6 +23,7 @@ export default function EditGuidePage() {
         setPersonality(guide.personality);
         setResponseGuidelines(guide.response_guidelines);
         setVoice(guide.voice || "coral");
+        setKnowledge(guide.knowledge || "internal");
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -38,6 +40,7 @@ export default function EditGuidePage() {
         personality,
         response_guidelines: responseGuidelines,
         voice,
+        knowledge,
       });
       navigate(`/guidelines/${id}`);
     } catch (err) {
@@ -119,6 +122,18 @@ export default function EditGuidePage() {
             <option value="coral">Coral</option>
             <option value="ash">Ash</option>
             <option value="marin">Marin</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Knowledge Source</label>
+          <p className="text-xs text-gray-500 mb-2">Internal uses only artwork data from the database. External also draws on broader art knowledge.</p>
+          <select
+            value={knowledge}
+            onChange={(e) => setKnowledge(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent bg-white"
+          >
+            <option value="internal">Internal</option>
+            <option value="external">External</option>
           </select>
         </div>
         <button

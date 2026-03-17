@@ -32,10 +32,10 @@ router.get("/:id", async (req: Request, res: Response) => {
 // POST /api/guides — Create guide
 router.post("/", async (req: Request, res: Response) => {
   try {
-    const { name, description, personality, response_guidelines, voice } = req.body;
+    const { name, description, personality, response_guidelines, voice, knowledge } = req.body;
     const result = await pool.query(
-      "INSERT INTO guides (name, description, personality, response_guidelines, voice) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-      [name, description, personality, response_guidelines, voice || "coral"]
+      "INSERT INTO guides (name, description, personality, response_guidelines, voice, knowledge) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+      [name, description, personality, response_guidelines, voice || "coral", knowledge || "internal"]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -48,7 +48,7 @@ router.post("/", async (req: Request, res: Response) => {
 router.put("/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, description, personality, response_guidelines, voice } = req.body;
+    const { name, description, personality, response_guidelines, voice, knowledge } = req.body;
 
     const existing = await pool.query("SELECT * FROM guides WHERE id = $1", [id]);
     if (existing.rows.length === 0) {
@@ -56,8 +56,8 @@ router.put("/:id", async (req: Request, res: Response) => {
     }
 
     const result = await pool.query(
-      "UPDATE guides SET name = $1, description = $2, personality = $3, response_guidelines = $4, voice = $5 WHERE id = $6 RETURNING *",
-      [name, description, personality, response_guidelines, voice || "coral", id]
+      "UPDATE guides SET name = $1, description = $2, personality = $3, response_guidelines = $4, voice = $5, knowledge = $6 WHERE id = $7 RETURNING *",
+      [name, description, personality, response_guidelines, voice || "coral", knowledge || "internal", id]
     );
     res.json(result.rows[0]);
   } catch (err) {

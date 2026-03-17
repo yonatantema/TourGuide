@@ -34,18 +34,25 @@ router.post("/session", async (req, res) => {
       ? `\n\nDetailed visual description of the artwork (use this to answer questions about what is visible in the artwork):\n${visualAnalysis}`
       : "";
 
+    const knowledgeInstruction = guide.knowledge === "external"
+      ? "- Use the artwork knowledge provided above as your primary source. You may also draw on your broader knowledge of art history, techniques, movements, and artists to enrich the conversation, but always prioritize the provided information."
+      : "- You must ONLY use the artwork knowledge provided above and the visual description to answer questions. Do not use any outside knowledge. If the visitor asks something not covered by your provided knowledge, say you don't have that information.";
+
     const instructions = `${guide.personality}
 
 The artwork you are discussing:
 Title: ${artwork.artwork_name}
 Artist: ${artwork.artist_name}
-Information: ${artwork.artwork_info}${visualSection}
+
+Your knowledge about this artwork (this is your primary source — present it naturally as your own expertise, do not claim you lack information when the answer is below):
+${artwork.artwork_info}${visualSection}
 
 Important instructions:
 ${guide.response_guidelines}
+${knowledgeInstruction}
 - Speak naturally and friendly
 - Focus on the most interesting or relevant details
-- If you don't know something, say it clearly
+- If the visitor asks something not covered by your knowledge above and you genuinely don't know, say so clearly
 - Start with a brief greeting and mention the artwork title
 - You MUST respond entirely in ${language || "english"}. Every word you say must be in ${language || "english"}.
 
