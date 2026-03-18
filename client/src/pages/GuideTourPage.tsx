@@ -27,7 +27,6 @@ export default function GuideTourPage() {
   }, []);
 
   useEffect(() => {
-    if (location.state?.restoredArtwork) return;
     navigator.mediaDevices
       .getUserMedia({ video: { facingMode: "environment" } })
       .then((s) => {
