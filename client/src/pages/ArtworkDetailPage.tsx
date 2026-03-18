@@ -54,11 +54,11 @@ export default function ArtworkDetailPage() {
       </div>
 
       <div className="bg-cream rounded-xl border-2 border-gray-300 p-6 md:p-8">
-        <div className="flex items-center justify-between mb-2">
-          <h1 className="font-serif text-3xl font-bold text-gray-900">{artwork.artwork_name}</h1>
+        <div className="relative mb-2">
+          <h1 className="font-serif text-3xl font-bold text-gray-900 text-center">{artwork.artwork_name}</h1>
           <Link
             to={`/gallery/${artwork.id}/edit`}
-            className="text-gray-400 hover:text-accent transition-colors"
+            className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 hover:text-accent transition-colors"
             title="Edit artwork"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -66,7 +66,7 @@ export default function ArtworkDetailPage() {
             </svg>
           </Link>
         </div>
-        <p className="text-gray-500 mb-6">{artwork.artist_name}</p>
+        <p className="text-center text-gray-500 mb-6">{artwork.artist_name}</p>
         <img
           src={`${UPLOADS_URL}/${artwork.image_filename}`}
           alt={artwork.artwork_name}
