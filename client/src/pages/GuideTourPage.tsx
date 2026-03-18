@@ -142,16 +142,16 @@ export default function GuideTourPage() {
           {!showModal && (
             <button
               onClick={handleCapture}
-              className="absolute bottom-6 left-1/2 -translate-x-1/2 w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-100 transition-colors cursor-pointer"
+              className="absolute bottom-6 left-1/2 -translate-x-1/2 w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-100 transition-colors cursor-pointer"
             >
-              <span className="w-3.5 h-3.5 bg-accent rounded-full" />
+              <span className="w-4 h-4 bg-accent rounded-full" />
             </button>
           )}
         </div>
 
         {cameraStatus === "pending" && (
-          <button className="absolute bottom-6 left-1/2 -translate-x-1/2 w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-100 transition-colors cursor-pointer">
-            <span className="w-3.5 h-3.5 bg-accent rounded-full" />
+          <button className="absolute bottom-6 left-1/2 -translate-x-1/2 w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-100 transition-colors cursor-pointer">
+            <span className="w-4 h-4 bg-accent rounded-full" />
           </button>
         )}
       </div>
