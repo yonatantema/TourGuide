@@ -36,7 +36,7 @@ export default function PublicArtworkPage() {
       </div>
 
       <div className="bg-cream rounded-xl border-2 border-gray-300 p-6 md:p-8">
-        <h1 className="font-serif text-3xl font-bold text-gray-900 mb-1">
+        <h1 className="font-serif text-2xl font-bold text-gray-900 mb-1 text-center">
           {artwork.artwork_name}
         </h1>
         <p className="text-center text-gray-500 mb-6">{artwork.artist_name}</p>

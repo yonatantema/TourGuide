@@ -55,7 +55,7 @@ export default function ArtworkDetailPage() {
 
       <div className="bg-cream rounded-xl border-2 border-gray-300 p-6 md:p-8">
         <div className="relative mb-2">
-          <h1 className="font-serif text-3xl font-bold text-gray-900 text-center">{artwork.artwork_name}</h1>
+          <h1 className="font-serif text-2xl font-bold text-gray-900 text-center">{artwork.artwork_name}</h1>
           <Link
             to={`/gallery/${artwork.id}/edit`}
             className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 hover:text-accent transition-colors"
