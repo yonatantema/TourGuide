@@ -95,13 +95,13 @@ export default function GuideTourPage() {
 
   return (
     <div className="min-h-screen px-6 py-10 max-w-[62rem] mx-auto flex flex-col">
-      <div className="flex items-start justify-between mb-8">
+      <div className="flex items-center justify-between mb-8">
         <h1 className="font-serif text-3xl md:text-4xl text-gray-900">
           Museum Guide
         </h1>
         <Link
           to="/guides"
-          className="mt-2 px-4 py-2 border-2 border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+          className="px-4 py-2 border-2 border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
         >
           Change Guide
         </Link>
