@@ -369,7 +369,7 @@ export default function ConversationModal({
             onClick={handleStartConversation}
             className="flex-shrink-0 px-8 py-3 bg-accent text-white rounded-md text-sm font-medium hover:opacity-80 transition-opacity cursor-pointer"
           >
-            Start Conversation
+            Start a Conversation
           </button>
         )}
 
