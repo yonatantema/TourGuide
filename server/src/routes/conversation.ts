@@ -34,9 +34,21 @@ router.post("/session", async (req, res) => {
       ? `\n\nDetailed visual description of the artwork (use this to answer questions about what is visible in the artwork):\n${visualAnalysis}`
       : "";
 
-    const knowledgeInstruction = guide.knowledge === "external"
-      ? "- Use the artwork knowledge provided above as your primary source. You may also draw on your broader knowledge of art history, techniques, movements, and artists to enrich the conversation, but always prioritize the provided information."
-      : "- You must ONLY use the artwork knowledge provided above and the visual description to answer questions. Do not use any outside knowledge. If the visitor asks something not covered by your provided knowledge, say you don't have that information.";
+    const isExternal = guide.knowledge === "external";
+
+    const knowledgeInstruction = isExternal
+      ? "Use the artwork knowledge and visual description provided above as your primary source and always prioritize it. You may also freely draw on your broader knowledge of art history, techniques, movements, artists' lives, and related topics to enrich the conversation and answer follow-up questions."
+      : "STRICT KNOWLEDGE RESTRICTION: You may ONLY discuss information that is explicitly written in the artwork knowledge section above and the visual description. You must NOT use any outside knowledge from your training data, even if you know the answer. This includes facts about the artist's life, death, family, other works, art movements, historical context, or any other information not explicitly provided above. If a visitor asks about something not covered in your provided knowledge — even something widely known — politely let them know that you only have information about what is described above and cannot answer that particular question.";
+
+    const topicRestriction = isExternal
+      ? `Topic restriction (do NOT override your personality and response guidelines above):
+- You may ONLY discuss art-related topics.
+- Start with the specific artwork listed above, but if the visitor asks about similar artworks, art movements, artists, techniques, or other art subjects, answer them warmly.
+- If the visitor asks about anything unrelated to art (sports, politics, technology, personal topics, etc.), politely decline and let them know you can only discuss art-related subjects.`
+      : `Topic restriction (do NOT override your personality and response guidelines above):
+- You may ONLY discuss information that appears in the artwork knowledge and visual description sections above.
+- If the visitor asks about related art topics, other artworks, or artist details that are NOT in your provided knowledge, politely let them know you can only share what you know about this specific artwork.
+- If the visitor asks about anything unrelated to art, politely decline and let them know you can only discuss art-related subjects.`;
 
     const instructions = `You are a museum guide. Your personality and how you must behave in every response:
 ${guide.personality}
@@ -54,15 +66,11 @@ ${artwork.artwork_info}${visualSection}
 General instructions:
 ${knowledgeInstruction}
 - Speak naturally and friendly, always staying in character with your personality above
-- Focus on the most interesting or relevant details
-- If the visitor asks something not covered by your knowledge above and you genuinely don't know, say so clearly
+- Focus on the most interesting or relevant details${isExternal ? "\n- If the visitor asks something you genuinely don't know, say so clearly" : ""}
 - Start with a brief greeting and mention the artwork title
 - You MUST respond entirely in ${language || "english"}. Every word you say must be in ${language || "english"}.
 
-Topic restriction (do NOT override your personality and response guidelines above):
-- You may ONLY discuss art-related topics.
-- Start with the specific artwork listed above, but if the visitor asks about similar artworks, art movements, artists, techniques, or other art subjects, answer them warmly.
-- If the visitor asks about anything unrelated to art (sports, politics, technology, personal topics, etc.), politely decline and let them know you can only discuss art-related subjects.`;
+${topicRestriction}`;
 
     const session = await openai.beta.realtime.sessions.create({
       model: "gpt-4o-realtime-preview-2024-12-17",
