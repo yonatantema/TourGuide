@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
 import { recognizeArtwork, getArtwork, Artwork, UPLOADS_URL } from "../services/artworkApi";
 import ConversationModal from "./ConversationPage";
 
@@ -9,6 +9,7 @@ type RecognitionState = "idle" | "loading" | "not-recognized" | "recognized" | "
 export default function GuideTourPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [cameraStatus, setCameraStatus] = useState<CameraStatus>("pending");
@@ -19,6 +20,14 @@ export default function GuideTourPage() {
   const [language, setLanguage] = useState("english");
 
   useEffect(() => {
+    if (location.state?.restoredArtwork) {
+      setRecognizedArtwork(location.state.restoredArtwork);
+      setRecognitionState("recognized");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (location.state?.restoredArtwork) return;
     navigator.mediaDevices
       .getUserMedia({ video: { facingMode: "environment" } })
       .then((s) => {
@@ -245,7 +254,7 @@ export default function GuideTourPage() {
                       Let's talk about this artwork
                     </button>
                     <button
-                      onClick={() => navigate(`/artwork/${recognizedArtwork.id}`)}
+                      onClick={() => navigate(`/artwork/${recognizedArtwork.id}`, { state: { guideId: id, artwork: recognizedArtwork } })}
                       className="w-full py-2.5 border-2 border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:border-gray-500 transition-colors cursor-pointer"
                     >
                       Full Details

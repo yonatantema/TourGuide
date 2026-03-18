@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { getArtwork, Artwork, UPLOADS_URL } from "../services/artworkApi";
 
 export default function PublicArtworkPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [artwork, setArtwork] = useState<Artwork | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -28,7 +29,13 @@ export default function PublicArtworkPage() {
     <div className="min-h-screen px-6 py-10 max-w-4xl mx-auto">
       <div className="mb-8">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => {
+            if (location.state?.guideId) {
+              navigate(`/guides/${location.state.guideId}`, { state: { restoredArtwork: location.state.artwork } });
+            } else {
+              navigate(-1);
+            }
+          }}
           className="px-5 py-2 border-2 border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:border-gray-500 transition-colors cursor-pointer"
         >
           &larr; Back
