@@ -66,7 +66,7 @@ export default function ArtworkDetailPage() {
             </svg>
           </Link>
         </div>
-        <p className="text-center text-gray-500 mb-6">{artwork.artist_name}</p>
+        <p className="text-gray-500 mb-6">{artwork.artist_name}</p>
         <img
           src={`${UPLOADS_URL}/${artwork.image_filename}`}
           alt={artwork.artwork_name}

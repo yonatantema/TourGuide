@@ -221,8 +221,8 @@ export default function GuideTourPage() {
                   </button>
                 </div>
                 <div className="flex-shrink-0 px-5 py-4">
-                  <div className="text-center mb-3">
-                    <h2 className="font-serif text-xl font-bold text-gray-900">
+                  <div className="mb-3">
+                    <h2 className="font-serif text-base font-bold text-gray-900">
                       {recognizedArtwork.artwork_name}
                     </h2>
                     <p className="text-gray-500 text-sm mt-1">
