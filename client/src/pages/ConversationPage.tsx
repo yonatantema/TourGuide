@@ -76,7 +76,8 @@ export default function ConversationModal({
   onClose,
 }: ConversationModalProps) {
   const [status, setStatus] = useState<ConversationStatus>("idle");
-  const [lastTranscript, setLastTranscript] = useState<string | null>(null);
+  const [transcriptLog, setTranscriptLog] = useState<{ speaker: "guide" | "visitor"; text: string }[]>([]);
+  const [showTranscript, setShowTranscript] = useState(false);
 
   const wsRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -88,13 +89,7 @@ export default function ConversationModal({
   const playbackBufferRef = useRef<Float32Array[]>([]);
   const playbackOffsetRef = useRef(0);
   const statusRef = useRef<ConversationStatus>("idle");
-  const transcriptRef = useRef("");
-  const transcriptSpeakerRef = useRef<"guide" | "visitor" | null>(null);
-  const fullTranscriptRef = useRef("");
-  const audioSamplesReceivedRef = useRef(0);
-  const audioPlaybackStartRef = useRef(0);
-  const textSyncIntervalRef = useRef<number | null>(null);
-  const samplesPlayedRef = useRef(0);
+  const currentGuideTextRef = useRef("");
 
   useEffect(() => {
     statusRef.current = status;
@@ -116,10 +111,6 @@ export default function ConversationModal({
     playbackBufferRef.current = [];
     playbackOffsetRef.current = 0;
     audioChunksRef.current = [];
-    if (textSyncIntervalRef.current) {
-      clearInterval(textSyncIntervalRef.current);
-      textSyncIntervalRef.current = null;
-    }
   }, []);
 
   useEffect(() => {
@@ -152,7 +143,6 @@ export default function ConversationModal({
           playbackOffsetRef.current = offset + needed;
         }
       }
-      samplesPlayedRef.current += written;
       for (let i = written; i < output.length; i++) {
         output[i] = 0;
       }
@@ -215,58 +205,31 @@ export default function ConversationModal({
           const pcm16 = new Int16Array(buf);
           const float32 = pcm16ToFloat32(pcm16);
           enqueueAudio(float32);
-          audioSamplesReceivedRef.current += pcm16.length;
-          // Start sync interval on first audio chunk of a response
-          if (audioPlaybackStartRef.current === 0) {
-            audioPlaybackStartRef.current = Date.now();
+          if (statusRef.current !== "playing") {
             setStatus("playing");
-            textSyncIntervalRef.current = window.setInterval(() => {
-              if (audioSamplesReceivedRef.current > 0 && fullTranscriptRef.current) {
-                const ratio = Math.min(samplesPlayedRef.current / audioSamplesReceivedRef.current, 1);
-                const charCount = Math.floor(ratio * fullTranscriptRef.current.length);
-                if (charCount >= fullTranscriptRef.current.length) {
-                  setLastTranscript(fullTranscriptRef.current);
-                } else {
-                  let endIdx = fullTranscriptRef.current.lastIndexOf(" ", charCount);
-                  if (endIdx < 0) endIdx = charCount;
-                  setLastTranscript(fullTranscriptRef.current.substring(0, endIdx || 1));
-                }
-              }
-            }, 100);
           }
         }
 
         if (data.type === "response.audio_transcript.delta") {
-          if (transcriptSpeakerRef.current !== "guide") {
-            fullTranscriptRef.current = "";
-            transcriptSpeakerRef.current = "guide";
-          }
-          fullTranscriptRef.current += data.delta;
+          currentGuideTextRef.current += data.delta;
         }
 
         if (data.type === "conversation.item.input_audio_transcription.completed") {
-          transcriptRef.current = data.transcript;
-          transcriptSpeakerRef.current = "visitor";
+          setTranscriptLog(prev => [...prev, { speaker: "visitor", text: data.transcript }]);
         }
 
         if (data.type === "response.audio.done") {
+          // Flush guide transcript to log
+          if (currentGuideTextRef.current) {
+            setTranscriptLog(prev => [...prev, { speaker: "guide", text: currentGuideTextRef.current }]);
+            currentGuideTextRef.current = "";
+          }
           // Only transition to ready if still in playing state
           if (statusRef.current !== "playing") return;
           // Wait for the playback buffer to drain before transitioning
           const checkDrained = setInterval(() => {
             if (playbackBufferRef.current.length === 0) {
               clearInterval(checkDrained);
-              // Reveal full transcript and stop sync interval
-              if (fullTranscriptRef.current) {
-                setLastTranscript(fullTranscriptRef.current);
-              }
-              if (textSyncIntervalRef.current) {
-                clearInterval(textSyncIntervalRef.current);
-                textSyncIntervalRef.current = null;
-              }
-              audioPlaybackStartRef.current = 0;
-              audioSamplesReceivedRef.current = 0;
-              samplesPlayedRef.current = 0;
               if (statusRef.current === "playing") {
                 setStatus("ready");
               }
@@ -319,17 +282,10 @@ export default function ConversationModal({
       processorRef.current = processor;
 
       audioChunksRef.current = [];
-      transcriptRef.current = "";
-      fullTranscriptRef.current = "";
-      transcriptSpeakerRef.current = null;
-      audioSamplesReceivedRef.current = 0;
-      audioPlaybackStartRef.current = 0;
-      samplesPlayedRef.current = 0;
-      if (textSyncIntervalRef.current) {
-        clearInterval(textSyncIntervalRef.current);
-        textSyncIntervalRef.current = null;
+      if (currentGuideTextRef.current) {
+        setTranscriptLog(prev => [...prev, { speaker: "guide", text: currentGuideTextRef.current }]);
+        currentGuideTextRef.current = "";
       }
-      setLastTranscript(null);
 
       processor.onaudioprocess = (e) => {
         const inputData = e.inputBuffer.getChannelData(0);
@@ -430,15 +386,6 @@ export default function ConversationModal({
           <p className="text-gray-500 text-sm mt-1">{artwork.artist_name}</p>
         </div>
 
-        {/* Last spoken text */}
-        {lastTranscript && (
-          <div className="flex-shrink-0 px-4 overflow-hidden flex items-end max-h-10">
-            <p className="text-sm text-left w-full text-gray-900">
-              {lastTranscript}
-            </p>
-          </div>
-        )}
-
         {/* Idle state — Start button */}
         {status === "idle" && (
           <button
@@ -522,6 +469,16 @@ export default function ConversationModal({
           </div>
         )}
 
+        {/* Show Transcript button */}
+        {showEndButton && status !== "error" && (
+          <button
+            onClick={() => setShowTranscript(true)}
+            className="flex-shrink-0 px-8 py-2 border-2 border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:border-gray-500 transition-colors cursor-pointer"
+          >
+            Show Transcript
+          </button>
+        )}
+
         {/* End Conversation button */}
         {showEndButton && status !== "error" && (
           <button
@@ -542,6 +499,40 @@ export default function ConversationModal({
           </button>
         )}
       </div>
+
+      {/* Transcript modal */}
+      {showTranscript && (
+        <div className="fixed inset-0 bg-black/60 z-[60] flex flex-col items-center justify-center px-6">
+          <div className="bg-cream rounded-xl shadow-lg max-w-lg max-h-[80vh] w-full flex flex-col overflow-hidden">
+            <div className="flex items-center px-4 py-3 border-b border-gray-200 flex-shrink-0">
+              <button
+                onClick={() => setShowTranscript(false)}
+                className="w-8 h-8 flex items-center justify-center text-gray-700 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <h2 className="font-serif text-lg font-bold text-gray-900 ml-2">Conversation</h2>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {transcriptLog.length === 0 && (
+                <p className="text-gray-400 text-sm text-center">No transcript yet</p>
+              )}
+              {transcriptLog.map((entry, i) => (
+                <div key={i}>
+                  <span className={`text-sm font-semibold ${entry.speaker === "guide" ? "text-gray-900" : "text-red-500"}`}>
+                    {entry.speaker === "guide" ? "Guide:" : "Visitor:"}
+                  </span>
+                  <p className={`text-sm mt-0.5 ${entry.speaker === "guide" ? "text-gray-900" : "text-red-500"}`}>
+                    {entry.text}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
