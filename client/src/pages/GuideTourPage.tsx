@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
 import { recognizeArtwork, getArtwork, Artwork, UPLOADS_URL } from "../services/artworkApi";
 import ConversationModal from "./ConversationPage";
+import temaLogo from "../assets/tema-logo.png";
 
 type CameraStatus = "pending" | "active" | "denied";
 type RecognitionState = "idle" | "loading" | "not-recognized" | "recognized" | "conversation";
@@ -95,17 +96,9 @@ export default function GuideTourPage() {
 
   return (
     <div className="min-h-screen px-6 py-10 max-w-[62rem] mx-auto flex flex-col">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="font-serif text-3xl md:text-4xl text-gray-900">
-          Museum Guide
-        </h1>
-        <Link
-          to="/guides"
-          className="px-4 py-2 border-2 border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
-        >
-          Change Guide
-        </Link>
-      </div>
+      <h1 className="font-serif text-3xl md:text-4xl text-gray-900 text-center mb-8">
+        AI Museum Guide
+      </h1>
 
       <div className="bg-cream rounded-xl overflow-hidden relative">
         {cameraStatus === "pending" && (
@@ -142,26 +135,29 @@ export default function GuideTourPage() {
           {!showModal && (
             <button
               onClick={handleCapture}
-              className="absolute bottom-6 left-1/2 -translate-x-1/2 w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-100 transition-colors cursor-pointer"
+              className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[68px] h-[68px] bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-100 transition-colors cursor-pointer"
             >
-              <span className="w-4 h-4 bg-accent rounded-full" />
+              <span className="w-[58px] h-[58px] bg-accent rounded-full" />
             </button>
           )}
         </div>
 
         {cameraStatus === "pending" && (
-          <button className="absolute bottom-6 left-1/2 -translate-x-1/2 w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-100 transition-colors cursor-pointer">
-            <span className="w-4 h-4 bg-accent rounded-full" />
+          <button className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[68px] h-[68px] bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-100 transition-colors cursor-pointer">
+            <span className="w-[58px] h-[58px] bg-accent rounded-full" />
           </button>
         )}
       </div>
 
-      <div className="flex justify-center mt-8">
+      <div className="flex items-center justify-between mt-6">
         <Link
-          to="/"
-          className="px-6 py-2 bg-gray-800 text-white rounded-md text-sm font-medium hover:bg-gray-700 transition-colors"
+          to="/guides"
+          className="px-4 py-2 border-2 border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
         >
-          Back to Home
+          Change Guide
+        </Link>
+        <Link to="/">
+          <img src={temaLogo} alt="TEMA" className="w-14" />
         </Link>
       </div>
 
