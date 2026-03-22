@@ -94,6 +94,7 @@ export default function ConversationModal({
   const audioSamplesReceivedRef = useRef(0);
   const audioPlaybackStartRef = useRef(0);
   const textSyncIntervalRef = useRef<number | null>(null);
+  const samplesPlayedRef = useRef(0);
 
   useEffect(() => {
     statusRef.current = status;
@@ -151,6 +152,7 @@ export default function ConversationModal({
           playbackOffsetRef.current = offset + needed;
         }
       }
+      samplesPlayedRef.current += written;
       for (let i = written; i < output.length; i++) {
         output[i] = 0;
       }
@@ -219,10 +221,8 @@ export default function ConversationModal({
             audioPlaybackStartRef.current = Date.now();
             setStatus("playing");
             textSyncIntervalRef.current = window.setInterval(() => {
-              const elapsed = (Date.now() - audioPlaybackStartRef.current) / 1000;
-              const totalDuration = audioSamplesReceivedRef.current / 24000;
-              if (totalDuration > 0 && fullTranscriptRef.current) {
-                const ratio = Math.min(elapsed / totalDuration, 1);
+              if (audioSamplesReceivedRef.current > 0 && fullTranscriptRef.current) {
+                const ratio = Math.min(samplesPlayedRef.current / audioSamplesReceivedRef.current, 1);
                 const charCount = Math.floor(ratio * fullTranscriptRef.current.length);
                 if (charCount >= fullTranscriptRef.current.length) {
                   setLastTranscript(fullTranscriptRef.current);
@@ -266,6 +266,7 @@ export default function ConversationModal({
               }
               audioPlaybackStartRef.current = 0;
               audioSamplesReceivedRef.current = 0;
+              samplesPlayedRef.current = 0;
               if (statusRef.current === "playing") {
                 setStatus("ready");
               }
@@ -323,6 +324,7 @@ export default function ConversationModal({
       transcriptSpeakerRef.current = null;
       audioSamplesReceivedRef.current = 0;
       audioPlaybackStartRef.current = 0;
+      samplesPlayedRef.current = 0;
       if (textSyncIntervalRef.current) {
         clearInterval(textSyncIntervalRef.current);
         textSyncIntervalRef.current = null;
