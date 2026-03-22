@@ -96,9 +96,12 @@ export default function GuideTourPage() {
 
   return (
     <div className="min-h-screen px-6 py-10 max-w-[62rem] mx-auto flex flex-col">
-      <h1 className="font-serif text-4xl md:text-5xl font-bold text-gray-900 text-center mb-8">
-        AI Museum Guide
+      <h1 className="font-serif text-4xl md:text-5xl font-bold text-gray-900 text-center mb-3">
+        Take a Photo
       </h1>
+      <p className="text-gray-500 text-center mb-6">
+        Point your camera at an artwork and snap a photo to start a conversation about it.
+      </p>
 
       <div className="bg-cream rounded-xl overflow-hidden relative">
         {cameraStatus === "pending" && (
