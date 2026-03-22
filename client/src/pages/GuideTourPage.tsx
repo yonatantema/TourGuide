@@ -96,7 +96,7 @@ export default function GuideTourPage() {
 
   return (
     <div className="min-h-screen px-6 py-10 max-w-[62rem] mx-auto flex flex-col">
-      <h1 className="font-serif text-3xl md:text-4xl text-gray-900 text-center mb-8">
+      <h1 className="font-serif text-4xl md:text-5xl font-bold text-gray-900 text-center mb-8">
         AI Museum Guide
       </h1>
 
@@ -152,9 +152,9 @@ export default function GuideTourPage() {
       <div className="flex items-center justify-between mt-6">
         <Link
           to="/guides"
-          className="px-4 py-2 border-2 border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+          className="px-4 py-2.5 border-2 border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors self-center"
         >
-          Change Guide
+          Switch Guide
         </Link>
         <Link to="/">
           <img src={temaLogo} alt="TEMA" className="w-14" />
