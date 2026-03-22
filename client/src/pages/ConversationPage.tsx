@@ -217,15 +217,20 @@ export default function ConversationModal({
           // Start sync interval on first audio chunk of a response
           if (audioPlaybackStartRef.current === 0) {
             audioPlaybackStartRef.current = Date.now();
+            setStatus("playing");
             textSyncIntervalRef.current = window.setInterval(() => {
               const elapsed = (Date.now() - audioPlaybackStartRef.current) / 1000;
               const totalDuration = audioSamplesReceivedRef.current / 24000;
               if (totalDuration > 0 && fullTranscriptRef.current) {
                 const ratio = Math.min(elapsed / totalDuration, 1);
                 const charCount = Math.floor(ratio * fullTranscriptRef.current.length);
-                let endIdx = fullTranscriptRef.current.lastIndexOf(" ", charCount);
-                if (endIdx < 0) endIdx = charCount;
-                setLastTranscript(fullTranscriptRef.current.substring(0, endIdx || 1));
+                if (charCount >= fullTranscriptRef.current.length) {
+                  setLastTranscript(fullTranscriptRef.current);
+                } else {
+                  let endIdx = fullTranscriptRef.current.lastIndexOf(" ", charCount);
+                  if (endIdx < 0) endIdx = charCount;
+                  setLastTranscript(fullTranscriptRef.current.substring(0, endIdx || 1));
+                }
               }
             }, 100);
           }
