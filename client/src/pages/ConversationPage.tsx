@@ -433,7 +433,7 @@ export default function ConversationModal({
         {/* Last spoken text */}
         {lastTranscript && (
           <div className="flex-shrink-0 px-4 overflow-hidden flex items-end max-h-10">
-            <p className="text-sm text-center w-full text-gray-900">
+            <p className="text-sm text-left w-full text-gray-900">
               {lastTranscript}
             </p>
           </div>
