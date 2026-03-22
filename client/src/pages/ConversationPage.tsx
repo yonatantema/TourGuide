@@ -76,6 +76,7 @@ export default function ConversationModal({
   onClose,
 }: ConversationModalProps) {
   const [status, setStatus] = useState<ConversationStatus>("idle");
+  const [lastTranscript, setLastTranscript] = useState("");
 
   const wsRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -87,6 +88,7 @@ export default function ConversationModal({
   const playbackBufferRef = useRef<Float32Array[]>([]);
   const playbackOffsetRef = useRef(0);
   const statusRef = useRef<ConversationStatus>("idle");
+  const transcriptRef = useRef("");
 
   useEffect(() => {
     statusRef.current = status;
@@ -204,6 +206,16 @@ export default function ConversationModal({
           enqueueAudio(float32);
         }
 
+        if (data.type === "response.audio_transcript.delta") {
+          transcriptRef.current += data.delta;
+          setLastTranscript(transcriptRef.current);
+        }
+
+        if (data.type === "conversation.item.input_audio_transcription.completed") {
+          transcriptRef.current = data.transcript;
+          setLastTranscript(data.transcript);
+        }
+
         if (data.type === "response.audio.done") {
           // Only transition to ready if still in playing state
           if (statusRef.current !== "playing") return;
@@ -263,6 +275,8 @@ export default function ConversationModal({
       processorRef.current = processor;
 
       audioChunksRef.current = [];
+      transcriptRef.current = "";
+      setLastTranscript("");
 
       processor.onaudioprocess = (e) => {
         const inputData = e.inputBuffer.getChannelData(0);
@@ -362,6 +376,13 @@ export default function ConversationModal({
           </h2>
           <p className="text-gray-500 text-sm mt-1">{artwork.artist_name}</p>
         </div>
+
+        {/* Last spoken text */}
+        {lastTranscript && (
+          <p className="text-gray-600 text-sm text-center line-clamp-2 flex-shrink-0 px-4">
+            {lastTranscript}
+          </p>
+        )}
 
         {/* Idle state — Start button */}
         {status === "idle" && (
