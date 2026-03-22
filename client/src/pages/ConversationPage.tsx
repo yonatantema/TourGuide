@@ -95,10 +95,17 @@ export default function ConversationModal({
   const audioPlaybackStartRef = useRef(0);
   const textSyncIntervalRef = useRef<number | null>(null);
   const samplesPlayedRef = useRef(0);
+  const transcriptContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     statusRef.current = status;
   }, [status]);
+
+  useEffect(() => {
+    if (transcriptContainerRef.current) {
+      transcriptContainerRef.current.scrollTop = transcriptContainerRef.current.scrollHeight;
+    }
+  }, [lastTranscript]);
 
   const cleanup = useCallback(() => {
     wsRef.current?.close();
@@ -432,7 +439,7 @@ export default function ConversationModal({
 
         {/* Last spoken text */}
         {lastTranscript && (
-          <div className="flex-shrink-0 px-4 overflow-hidden flex items-end max-h-10">
+          <div ref={transcriptContainerRef} className="flex-shrink-0 px-4 overflow-y-hidden max-h-10">
             <p className="text-sm text-left w-full text-gray-900">
               {lastTranscript}
             </p>
