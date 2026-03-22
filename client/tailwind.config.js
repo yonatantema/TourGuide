@@ -5,7 +5,7 @@ export default {
     extend: {
       colors: {
         cream: "#f5f0eb",
-        accent: "#6366f1",
+        accent: "#5B73E7",
       },
       fontFamily: {
         serif: ['"Playfair Display"', "Georgia", "serif"],
