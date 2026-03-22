@@ -7,6 +7,37 @@ import temaLogo from "../assets/tema-logo.png";
 type CameraStatus = "pending" | "active" | "denied";
 type RecognitionState = "idle" | "loading" | "not-recognized" | "recognized" | "conversation";
 
+const translations: Record<string, Record<string, string>> = {
+  english: {
+    title: "Take a Photo",
+    description: "Point your camera at an artwork and snap a photo to start a conversation about it.",
+    switchGuide: "Switch Guide",
+    cameraRequired: "Camera access required",
+    cameraDenied: "Camera access was denied. Please allow camera access and reload.",
+    artworkRecognition: "Artwork Recognition",
+    identifying: "Identifying artwork...",
+    noArtwork: "No Artwork Recognized",
+    noMatch: "Could not match this image to any artwork in our collection",
+    tryAgain: "Try Again",
+    talkAbout: "Let's talk about this artwork",
+    fullDetails: "Full Details",
+  },
+  french: {
+    title: "Prenez une Photo",
+    description: "Dirigez votre appareil photo vers une œuvre d'art et prenez une photo pour commencer une conversation à son sujet.",
+    switchGuide: "Changer de Guide",
+    cameraRequired: "Accès à la caméra requis",
+    cameraDenied: "L'accès à la caméra a été refusé. Veuillez autoriser l'accès et recharger.",
+    artworkRecognition: "Reconnaissance d'œuvre",
+    identifying: "Identification en cours...",
+    noArtwork: "Aucune œuvre reconnue",
+    noMatch: "Impossible de faire correspondre cette image à une œuvre de notre collection",
+    tryAgain: "Réessayer",
+    talkAbout: "Parlons de cette œuvre d'art",
+    fullDetails: "Détails complets",
+  },
+};
+
 export default function GuideTourPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -19,6 +50,7 @@ export default function GuideTourPage() {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [recognizedArtwork, setRecognizedArtwork] = useState<Artwork | null>(null);
   const [language, setLanguage] = useState("english");
+  const t = translations[language] || translations.english;
 
   useEffect(() => {
     if (location.state?.restoredArtwork) {
@@ -97,23 +129,23 @@ export default function GuideTourPage() {
   return (
     <div className="min-h-screen px-6 py-10 max-w-[62rem] mx-auto flex flex-col">
       <h1 className="font-serif text-4xl md:text-5xl font-bold text-gray-900 text-center mb-3">
-        Take a Photo
+        {t.title}
       </h1>
       <p className="text-gray-500 text-center mb-6">
-        Point your camera at an artwork and snap a photo to start a conversation about it.
+        {t.description}
       </p>
 
       <div className="bg-cream rounded-xl overflow-hidden relative">
         {cameraStatus === "pending" && (
           <div className="bg-gray-200 flex items-center justify-center aspect-[3/4] md:aspect-[16/9] rounded-xl">
-            <p className="text-gray-500">Camera access required</p>
+            <p className="text-gray-500">{t.cameraRequired}</p>
           </div>
         )}
 
         {cameraStatus === "denied" && (
           <div className="bg-gray-200 flex items-center justify-center aspect-[3/4] md:aspect-[16/9] rounded-xl">
             <p className="text-gray-500">
-              Camera access was denied. Please allow camera access and reload.
+              {t.cameraDenied}
             </p>
           </div>
         )}
@@ -157,7 +189,7 @@ export default function GuideTourPage() {
           to="/guides"
           className="px-5 py-3 border-2 border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
         >
-          Switch Guide
+          {t.switchGuide}
         </Link>
         <Link to="/">
           <img src={temaLogo} alt="TEMA" className="w-14" />
@@ -182,11 +214,11 @@ export default function GuideTourPage() {
                 {recognitionState === "loading" && (
                   <div className="flex flex-col items-center gap-4 py-6">
                     <h2 className="text-gray-900 text-xl font-serif font-bold self-start">
-                      Artwork Recognition
+                      {t.artworkRecognition}
                     </h2>
                     <div className="w-12 h-12 border-4 border-gray-300 border-t-gray-700 rounded-full animate-spin mt-4" />
                     <p className="text-gray-500 text-sm mt-2">
-                      Identifying artwork...
+                      {t.identifying}
                     </p>
                   </div>
                 )}
@@ -194,16 +226,16 @@ export default function GuideTourPage() {
                 {recognitionState === "not-recognized" && (
                   <div className="flex flex-col items-center gap-4 py-6">
                     <h2 className="text-gray-900 text-xl font-serif font-bold self-start">
-                      No Artwork Recognized
+                      {t.noArtwork}
                     </h2>
                     <p className="text-gray-400 text-sm text-center mt-2">
-                      Could not match this image to any artwork in our collection
+                      {t.noMatch}
                     </p>
                     <button
                       onClick={dismissModal}
                       className="mt-2 px-8 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
                     >
-                      Try Again
+                      {t.tryAgain}
                     </button>
                   </div>
                 )}
@@ -249,13 +281,13 @@ export default function GuideTourPage() {
                       onClick={() => setRecognitionState("conversation")}
                       className="w-full py-2.5 bg-accent text-white rounded-md text-sm font-medium hover:opacity-80 transition-opacity cursor-pointer"
                     >
-                      Let's talk about this artwork
+                      {t.talkAbout}
                     </button>
                     <button
                       onClick={() => navigate(`/artwork/${recognizedArtwork.id}`, { state: { guideId: id, artwork: recognizedArtwork } })}
                       className="w-full py-2.5 border-2 border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:border-gray-500 transition-colors cursor-pointer"
                     >
-                      Full Details
+                      {t.fullDetails}
                     </button>
                   </div>
                 </div>
