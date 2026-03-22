@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getAllGuides, Guide } from "../services/guideApi";
+import temaLogo from "../assets/tema-logo.png";
 
 export default function ChooseGuidePage() {
   const [guides, setGuides] = useState<Guide[]>([]);
@@ -14,22 +15,11 @@ export default function ChooseGuidePage() {
   }, []);
 
   return (
-    <div className="min-h-screen px-6 py-10 max-w-5xl mx-auto flex flex-col">
-      <div className="flex items-start justify-between mb-8">
-        <h1 className="font-serif text-5xl md:text-6xl font-bold text-gray-900">
-          Choose Your Guide
-        </h1>
-        <Link
-          to="/"
-          className="mt-2 p-2 bg-gray-900 text-white rounded-md hover:bg-gray-700 transition-colors"
-          title="Back to home"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-        </Link>
-      </div>
-      <p className="text-gray-500 mb-10">
+    <div className="min-h-screen px-6 py-10 max-w-5xl mx-auto flex flex-col relative">
+      <h1 className="font-serif text-5xl md:text-6xl font-bold text-gray-900 text-center mb-4">
+        Choose Your<br />Guide
+      </h1>
+      <p className="text-accent text-center mb-10">
         Choose your preferred guide style for your exciting museum journey
       </p>
 
@@ -59,9 +49,9 @@ export default function ChooseGuidePage() {
         </div>
       )}
 
-      <p className="text-center text-gray-400 text-sm mt-auto pt-10">
-        You can change the guide at any time during the tour
-      </p>
+      <Link to="/" className="absolute bottom-6 right-6">
+        <img src={temaLogo} alt="TEMA" className="w-14" />
+      </Link>
     </div>
   );
 }
