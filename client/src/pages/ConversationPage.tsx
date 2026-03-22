@@ -390,7 +390,7 @@ export default function ConversationModal({
         {status === "idle" && (
           <button
             onClick={handleStartConversation}
-            className="flex-shrink-0 px-8 py-3 bg-accent text-white rounded-md text-sm font-medium hover:opacity-80 transition-opacity cursor-pointer"
+            className="flex-shrink-0 w-full py-3 bg-accent text-white rounded-md text-sm font-medium hover:opacity-80 transition-opacity cursor-pointer"
           >
             Start a Conversation
           </button>
@@ -493,7 +493,7 @@ export default function ConversationModal({
         {status === "idle" && (
           <button
             onClick={onClose}
-            className="flex-shrink-0 px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:border-gray-500 transition-colors cursor-pointer"
+            className="flex-shrink-0 w-full py-3 border-2 border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:border-gray-500 transition-colors cursor-pointer"
           >
             Back
           </button>
