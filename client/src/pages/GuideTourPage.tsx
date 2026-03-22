@@ -152,10 +152,10 @@ export default function GuideTourPage() {
         )}
       </div>
 
-      <div className="flex items-center justify-between mt-6">
+      <div className="flex items-center justify-between mt-3">
         <Link
           to="/guides"
-          className="px-4 py-2.5 border-2 border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors self-center"
+          className="px-5 py-3 border-2 border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
         >
           Switch Guide
         </Link>
