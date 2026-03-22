@@ -49,7 +49,7 @@ export default function ChooseGuidePage() {
         </div>
       )}
 
-      <Link to="/" className="absolute bottom-6 right-6">
+      <Link to="/" className="self-end mt-auto pt-6">
         <img src={temaLogo} alt="TEMA" className="w-14" />
       </Link>
     </div>
