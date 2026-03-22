@@ -335,6 +335,17 @@ export default function ConversationModal({
       return;
     }
 
+    // Discard recordings that are too quiet (likely background noise, not speech)
+    let sumSquares = 0;
+    for (let i = 0; i < combined.length; i++) {
+      sumSquares += combined[i] * combined[i];
+    }
+    const rms = Math.sqrt(sumSquares / combined.length);
+    if (rms < 500) {
+      setStatus("ready");
+      return;
+    }
+
     // Send audio in chunks
     const CHUNK_SIZE = 24000;
     for (let i = 0; i < combined.length; i += CHUNK_SIZE) {
