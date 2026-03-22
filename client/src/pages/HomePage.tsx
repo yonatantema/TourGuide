@@ -14,7 +14,7 @@ export default function HomePage() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
             to="/guides"
-            className="px-8 py-3 border-2 border-gray-800 text-gray-800 rounded-md font-medium hover:bg-gray-800 hover:text-white transition-colors"
+            className="px-8 py-3 border-2 border-accent bg-accent text-white rounded-md font-medium hover:bg-transparent hover:text-accent transition-colors"
           >
             Take me to the guide
           </Link>
