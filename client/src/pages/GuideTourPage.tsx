@@ -127,7 +127,7 @@ export default function GuideTourPage() {
   const showModal = recognitionState !== "idle" && recognitionState !== "conversation";
 
   return (
-    <div className="min-h-screen px-6 py-10 max-w-[62rem] mx-auto flex flex-col">
+    <div className="h-[100dvh] px-6 py-6 max-w-[62rem] mx-auto flex flex-col overflow-hidden">
       <h1 className="font-serif text-4xl md:text-5xl font-bold text-gray-900 text-center mb-3">
         {t.title}
       </h1>
@@ -137,13 +137,13 @@ export default function GuideTourPage() {
 
       <div className="bg-cream rounded-xl overflow-hidden relative">
         {cameraStatus === "pending" && (
-          <div className="bg-gray-200 flex items-center justify-center aspect-[3/4] md:aspect-[16/9] rounded-xl">
+          <div className="bg-gray-200 flex items-center justify-center aspect-[4/5] md:aspect-[16/9] rounded-xl">
             <p className="text-gray-500">{t.cameraRequired}</p>
           </div>
         )}
 
         {cameraStatus === "denied" && (
-          <div className="bg-gray-200 flex items-center justify-center aspect-[3/4] md:aspect-[16/9] rounded-xl">
+          <div className="bg-gray-200 flex items-center justify-center aspect-[4/5] md:aspect-[16/9] rounded-xl">
             <p className="text-gray-500">
               {t.cameraDenied}
             </p>
@@ -156,7 +156,7 @@ export default function GuideTourPage() {
             autoPlay
             playsInline
             muted
-            className="w-full aspect-[3/4] md:aspect-[16/9] object-cover rounded-xl"
+            className="w-full aspect-[4/5] md:aspect-[16/9] object-cover rounded-xl"
           />
           {capturedImage && (
             <img
