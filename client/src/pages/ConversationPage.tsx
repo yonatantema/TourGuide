@@ -76,7 +76,7 @@ export default function ConversationModal({
   onClose,
 }: ConversationModalProps) {
   const [status, setStatus] = useState<ConversationStatus>("idle");
-  const [lastTranscript, setLastTranscript] = useState("");
+  const [lastTranscript, setLastTranscript] = useState<{ text: string; speaker: "guide" | "visitor" } | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -89,6 +89,7 @@ export default function ConversationModal({
   const playbackOffsetRef = useRef(0);
   const statusRef = useRef<ConversationStatus>("idle");
   const transcriptRef = useRef("");
+  const transcriptSpeakerRef = useRef<"guide" | "visitor" | null>(null);
 
   useEffect(() => {
     statusRef.current = status;
@@ -207,13 +208,18 @@ export default function ConversationModal({
         }
 
         if (data.type === "response.audio_transcript.delta") {
+          if (transcriptSpeakerRef.current !== "guide") {
+            transcriptRef.current = "";
+            transcriptSpeakerRef.current = "guide";
+          }
           transcriptRef.current += data.delta;
-          setLastTranscript(transcriptRef.current);
+          setLastTranscript({ text: transcriptRef.current, speaker: "guide" });
         }
 
         if (data.type === "conversation.item.input_audio_transcription.completed") {
           transcriptRef.current = data.transcript;
-          setLastTranscript(data.transcript);
+          transcriptSpeakerRef.current = "visitor";
+          setLastTranscript({ text: data.transcript, speaker: "visitor" });
         }
 
         if (data.type === "response.audio.done") {
@@ -276,7 +282,8 @@ export default function ConversationModal({
 
       audioChunksRef.current = [];
       transcriptRef.current = "";
-      setLastTranscript("");
+      transcriptSpeakerRef.current = null;
+      setLastTranscript(null);
 
       processor.onaudioprocess = (e) => {
         const inputData = e.inputBuffer.getChannelData(0);
@@ -379,8 +386,8 @@ export default function ConversationModal({
 
         {/* Last spoken text */}
         {lastTranscript && (
-          <p className="text-gray-600 text-sm text-center line-clamp-2 flex-shrink-0 px-4">
-            {lastTranscript}
+          <p className={`text-sm text-center line-clamp-2 flex-shrink-0 px-4 ${lastTranscript.speaker === "guide" ? "text-blue-600" : "text-red-500"}`}>
+            {lastTranscript.text}
           </p>
         )}
 
