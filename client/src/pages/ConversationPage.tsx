@@ -329,6 +329,12 @@ export default function ConversationModal({
     }
     audioChunksRef.current = [];
 
+    // Discard recordings shorter than 0.5s to avoid phantom transcriptions
+    if (combined.length < 12000) {
+      setStatus("ready");
+      return;
+    }
+
     // Send audio in chunks
     const CHUNK_SIZE = 24000;
     for (let i = 0; i < combined.length; i += CHUNK_SIZE) {
