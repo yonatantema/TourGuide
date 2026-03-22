@@ -386,9 +386,11 @@ export default function ConversationModal({
 
         {/* Last spoken text */}
         {lastTranscript && (
-          <p className={`text-sm text-center line-clamp-2 flex-shrink-0 px-4 ${lastTranscript.speaker === "guide" ? "text-blue-600" : "text-red-500"}`}>
-            {lastTranscript.text}
-          </p>
+          <div className="flex-shrink-0 px-4 overflow-hidden flex items-end" style={{ maxHeight: "2.8em" }}>
+            <p className={`text-sm text-center w-full ${lastTranscript.speaker === "guide" ? "text-blue-600" : "text-red-500"}`}>
+              {lastTranscript.text}
+            </p>
+          </div>
         )}
 
         {/* Idle state — Start button */}
