@@ -76,7 +76,7 @@ export default function ConversationModal({
   onClose,
 }: ConversationModalProps) {
   const [status, setStatus] = useState<ConversationStatus>("idle");
-  const [lastTranscript, setLastTranscript] = useState<{ text: string; speaker: "guide" | "visitor" } | null>(null);
+  const [lastTranscript, setLastTranscript] = useState<string | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -225,7 +225,7 @@ export default function ConversationModal({
                 const charCount = Math.floor(ratio * fullTranscriptRef.current.length);
                 let endIdx = fullTranscriptRef.current.lastIndexOf(" ", charCount);
                 if (endIdx < 0) endIdx = charCount;
-                setLastTranscript({ text: fullTranscriptRef.current.substring(0, endIdx || 1), speaker: "guide" });
+                setLastTranscript(fullTranscriptRef.current.substring(0, endIdx || 1));
               }
             }, 100);
           }
@@ -242,7 +242,6 @@ export default function ConversationModal({
         if (data.type === "conversation.item.input_audio_transcription.completed") {
           transcriptRef.current = data.transcript;
           transcriptSpeakerRef.current = "visitor";
-          setLastTranscript({ text: data.transcript, speaker: "visitor" });
         }
 
         if (data.type === "response.audio.done") {
@@ -254,7 +253,7 @@ export default function ConversationModal({
               clearInterval(checkDrained);
               // Reveal full transcript and stop sync interval
               if (fullTranscriptRef.current) {
-                setLastTranscript({ text: fullTranscriptRef.current, speaker: "guide" });
+                setLastTranscript(fullTranscriptRef.current);
               }
               if (textSyncIntervalRef.current) {
                 clearInterval(textSyncIntervalRef.current);
@@ -426,9 +425,9 @@ export default function ConversationModal({
 
         {/* Last spoken text */}
         {lastTranscript && (
-          <div className="flex-shrink-0 px-4 overflow-hidden flex items-end" style={{ maxHeight: "2.8em" }}>
-            <p className={`text-sm text-center w-full ${lastTranscript.speaker === "guide" ? "text-blue-600" : "text-red-500"}`}>
-              {lastTranscript.text}
+          <div className="flex-shrink-0 px-4 overflow-hidden flex items-end max-h-10">
+            <p className="text-sm text-center w-full text-gray-900">
+              {lastTranscript}
             </p>
           </div>
         )}
