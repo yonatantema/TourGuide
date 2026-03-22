@@ -214,16 +214,19 @@ export default function ConversationModal({
           currentGuideTextRef.current += data.delta;
         }
 
+        if (data.type === "response.audio_transcript.done") {
+          const text = data.transcript || currentGuideTextRef.current;
+          if (text) {
+            setTranscriptLog(prev => [...prev, { speaker: "guide", text }]);
+          }
+          currentGuideTextRef.current = "";
+        }
+
         if (data.type === "conversation.item.input_audio_transcription.completed") {
           setTranscriptLog(prev => [...prev, { speaker: "visitor", text: data.transcript }]);
         }
 
         if (data.type === "response.audio.done") {
-          // Flush guide transcript to log
-          if (currentGuideTextRef.current) {
-            setTranscriptLog(prev => [...prev, { speaker: "guide", text: currentGuideTextRef.current }]);
-            currentGuideTextRef.current = "";
-          }
           // Only transition to ready if still in playing state
           if (statusRef.current !== "playing") return;
           // Wait for the playback buffer to drain before transitioning
@@ -282,10 +285,7 @@ export default function ConversationModal({
       processorRef.current = processor;
 
       audioChunksRef.current = [];
-      if (currentGuideTextRef.current) {
-        setTranscriptLog(prev => [...prev, { speaker: "guide", text: currentGuideTextRef.current }]);
-        currentGuideTextRef.current = "";
-      }
+      currentGuideTextRef.current = "";
 
       processor.onaudioprocess = (e) => {
         const inputData = e.inputBuffer.getChannelData(0);

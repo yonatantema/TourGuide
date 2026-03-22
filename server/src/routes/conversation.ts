@@ -79,7 +79,7 @@ ${topicRestriction}`;
       instructions,
       input_audio_format: "pcm16",
       output_audio_format: "pcm16",
-      input_audio_transcription: { model: "whisper-1" } as any,
+      input_audio_transcription: { model: "whisper-1", language: language === "french" ? "fr" : "en" } as any,
       turn_detection: null as any, // push-to-talk: disable server VAD
     });
 
