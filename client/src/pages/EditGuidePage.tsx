@@ -139,7 +139,7 @@ export default function EditGuidePage() {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full py-3 bg-accent text-white rounded-lg font-medium hover:bg-indigo-600 transition-colors disabled:opacity-50"
+          className="w-full py-3 bg-accent text-white rounded-lg font-medium hover:opacity-90 transition-colors disabled:opacity-50"
         >
           {submitting ? "Saving..." : "Save Changes"}
         </button>

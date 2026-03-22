@@ -111,14 +111,14 @@ export default function EditArtworkPage() {
             type="file"
             accept="image/*"
             onChange={(e) => setImage(e.target.files?.[0] || null)}
-            className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-accent file:text-white hover:file:bg-indigo-600 file:cursor-pointer"
+            className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-accent file:text-white hover:file:opacity-90 file:cursor-pointer"
           />
           <p className="text-xs text-gray-400 mt-1">Leave empty to keep current image</p>
         </div>
         <button
           type="submit"
           disabled={submitting}
-          className="w-full py-3 bg-accent text-white rounded-lg font-medium hover:bg-indigo-600 transition-colors disabled:opacity-50"
+          className="w-full py-3 bg-accent text-white rounded-lg font-medium hover:opacity-90 transition-colors disabled:opacity-50"
         >
           {submitting ? "Saving..." : "Save Changes"}
         </button>

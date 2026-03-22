@@ -47,7 +47,7 @@ export default function GuideDetailPage() {
         </Link>
         <button
           onClick={handleDelete}
-          className="px-5 py-2 bg-accent text-white rounded-md text-sm font-medium hover:bg-indigo-600 transition-colors"
+          className="px-5 py-2 bg-accent text-white rounded-md text-sm font-medium hover:opacity-90 transition-colors"
         >
           Delete Guide
         </button>

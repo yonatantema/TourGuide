@@ -29,7 +29,7 @@ export default function GuidelinesPage() {
           </Link>
           <Link
             to="/guidelines/add"
-            className="px-5 py-2 bg-accent text-white rounded-md text-sm font-medium hover:bg-indigo-600 transition-colors"
+            className="px-5 py-2 bg-accent text-white rounded-md text-sm font-medium hover:opacity-90 transition-colors"
           >
             + Add Guide
           </Link>
