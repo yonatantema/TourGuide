@@ -3,7 +3,7 @@ import temaLogo from "../assets/tema-logo.png";
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 text-center relative">
+    <div className="h-[100dvh] flex flex-col items-center justify-center px-4 text-center relative overflow-hidden">
       <div className="max-w-2xl">
         <h1 className="font-serif text-5xl md:text-6xl font-bold text-gray-900 mb-6">
           Welcome to the<br />
@@ -27,7 +27,7 @@ export default function HomePage() {
           </Link>
         </div>
       </div>
-      <img src={temaLogo} alt="TEMA" className="absolute bottom-16 right-6 w-12" />
+      <img src={temaLogo} alt="TEMA" className="absolute bottom-16 right-6 w-14" />
       <footer className="absolute bottom-6 text-sm text-gray-400">
         &copy; TEMA Creative 2026 - All Rights Reserved
       </footer>
