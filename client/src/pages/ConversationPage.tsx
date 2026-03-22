@@ -90,6 +90,10 @@ export default function ConversationModal({
   const statusRef = useRef<ConversationStatus>("idle");
   const transcriptRef = useRef("");
   const transcriptSpeakerRef = useRef<"guide" | "visitor" | null>(null);
+  const fullTranscriptRef = useRef("");
+  const audioSamplesReceivedRef = useRef(0);
+  const audioPlaybackStartRef = useRef(0);
+  const textSyncIntervalRef = useRef<number | null>(null);
 
   useEffect(() => {
     statusRef.current = status;
@@ -111,6 +115,10 @@ export default function ConversationModal({
     playbackBufferRef.current = [];
     playbackOffsetRef.current = 0;
     audioChunksRef.current = [];
+    if (textSyncIntervalRef.current) {
+      clearInterval(textSyncIntervalRef.current);
+      textSyncIntervalRef.current = null;
+    }
   }, []);
 
   useEffect(() => {
@@ -205,15 +213,30 @@ export default function ConversationModal({
           const pcm16 = new Int16Array(buf);
           const float32 = pcm16ToFloat32(pcm16);
           enqueueAudio(float32);
+          audioSamplesReceivedRef.current += pcm16.length;
+          // Start sync interval on first audio chunk of a response
+          if (audioPlaybackStartRef.current === 0) {
+            audioPlaybackStartRef.current = Date.now();
+            textSyncIntervalRef.current = window.setInterval(() => {
+              const elapsed = (Date.now() - audioPlaybackStartRef.current) / 1000;
+              const totalDuration = audioSamplesReceivedRef.current / 24000;
+              if (totalDuration > 0 && fullTranscriptRef.current) {
+                const ratio = Math.min(elapsed / totalDuration, 1);
+                const charCount = Math.floor(ratio * fullTranscriptRef.current.length);
+                let endIdx = fullTranscriptRef.current.lastIndexOf(" ", charCount);
+                if (endIdx < 0) endIdx = charCount;
+                setLastTranscript({ text: fullTranscriptRef.current.substring(0, endIdx || 1), speaker: "guide" });
+              }
+            }, 100);
+          }
         }
 
         if (data.type === "response.audio_transcript.delta") {
           if (transcriptSpeakerRef.current !== "guide") {
-            transcriptRef.current = "";
+            fullTranscriptRef.current = "";
             transcriptSpeakerRef.current = "guide";
           }
-          transcriptRef.current += data.delta;
-          setLastTranscript({ text: transcriptRef.current, speaker: "guide" });
+          fullTranscriptRef.current += data.delta;
         }
 
         if (data.type === "conversation.item.input_audio_transcription.completed") {
@@ -229,6 +252,16 @@ export default function ConversationModal({
           const checkDrained = setInterval(() => {
             if (playbackBufferRef.current.length === 0) {
               clearInterval(checkDrained);
+              // Reveal full transcript and stop sync interval
+              if (fullTranscriptRef.current) {
+                setLastTranscript({ text: fullTranscriptRef.current, speaker: "guide" });
+              }
+              if (textSyncIntervalRef.current) {
+                clearInterval(textSyncIntervalRef.current);
+                textSyncIntervalRef.current = null;
+              }
+              audioPlaybackStartRef.current = 0;
+              audioSamplesReceivedRef.current = 0;
               if (statusRef.current === "playing") {
                 setStatus("ready");
               }
@@ -282,7 +315,14 @@ export default function ConversationModal({
 
       audioChunksRef.current = [];
       transcriptRef.current = "";
+      fullTranscriptRef.current = "";
       transcriptSpeakerRef.current = null;
+      audioSamplesReceivedRef.current = 0;
+      audioPlaybackStartRef.current = 0;
+      if (textSyncIntervalRef.current) {
+        clearInterval(textSyncIntervalRef.current);
+        textSyncIntervalRef.current = null;
+      }
       setLastTranscript(null);
 
       processor.onaudioprocess = (e) => {
