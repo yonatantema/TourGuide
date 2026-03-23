@@ -34,12 +34,12 @@ export default function ChooseGuidePage() {
             <Link
               key={guide.id}
               to={`/guides/${guide.id}`}
-              className="bg-cream rounded-xl border-2 border-gray-300 p-6 hover:shadow-lg transition-shadow flex items-start gap-4"
+              className="bg-cream rounded-xl border-2 border-gray-300 p-6 hover:shadow-lg transition-shadow flex items-center gap-5"
             >
               <img
                 src={GUIDE_ICONS[guide.icon]?.src || GUIDE_ICONS["art-expert"].src}
                 alt={guide.name}
-                className="flex-shrink-0 w-10 h-10 rounded-lg"
+                className="flex-shrink-0 w-[72px] h-[72px] rounded-lg"
               />
               <div>
                 <h3 className="font-serif text-xl font-bold text-gray-900">{guide.name}</h3>
