@@ -68,8 +68,10 @@ export default function GuideTourPage() {
         streamRef.current = s;
         if (videoRef.current) {
           videoRef.current.srcObject = s;
+          videoRef.current.onloadedmetadata = () => {
+            setCameraStatus("active");
+          };
         }
-        setCameraStatus("active");
         s.getVideoTracks().forEach((track) => {
           track.onended = () => {
             setCameraStatus("pending");
