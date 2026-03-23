@@ -164,7 +164,8 @@ export default function ConversationModal({
   const stopPlayback = () => {
     playbackProcessorRef.current?.disconnect();
     playbackProcessorRef.current = null;
-    // Keep playbackCtxRef alive to preserve iOS audio session (volume settings)
+    playbackCtxRef.current?.close();
+    playbackCtxRef.current = null;
     playbackBufferRef.current = [];
     playbackOffsetRef.current = 0;
   };
