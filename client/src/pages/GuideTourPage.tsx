@@ -60,7 +60,8 @@ export default function GuideTourPage() {
     }
   }, []);
 
-  useEffect(() => {
+  const startCamera = () => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
     navigator.mediaDevices
       .getUserMedia({ video: { facingMode: "environment" } })
       .then((s) => {
@@ -69,14 +70,38 @@ export default function GuideTourPage() {
           videoRef.current.srcObject = s;
         }
         setCameraStatus("active");
+        s.getVideoTracks().forEach((track) => {
+          track.onended = () => {
+            setCameraStatus("pending");
+            startCamera();
+          };
+        });
       })
       .catch(() => {
         setCameraStatus("denied");
       });
+  };
 
+  useEffect(() => {
+    startCamera();
     return () => {
       streamRef.current?.getTracks().forEach((t) => t.stop());
     };
+  }, []);
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        const tracks = streamRef.current?.getVideoTracks() || [];
+        const alive = tracks.some((t) => t.readyState === "live");
+        if (!alive) {
+          setCameraStatus("pending");
+          startCamera();
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, []);
 
   const handleCapture = async () => {
