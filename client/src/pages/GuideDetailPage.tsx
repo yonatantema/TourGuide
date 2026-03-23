@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { getGuide, deleteGuide, Guide } from "../services/guideApi";
+import { GUIDE_ICONS } from "../assets/guide-icons";
 
 export default function GuideDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -54,6 +55,9 @@ export default function GuideDetailPage() {
       </div>
 
       <div className="bg-cream rounded-xl border-2 border-gray-300 p-6 md:p-8">
+        {GUIDE_ICONS[guide.icon] && (
+          <img src={GUIDE_ICONS[guide.icon].src} alt={guide.name} className="w-16 h-16 rounded-lg mb-4" />
+        )}
         <div className="flex items-center justify-between mb-2">
           <h1 className="font-serif text-3xl font-bold text-gray-900">{guide.name}</h1>
           <Link

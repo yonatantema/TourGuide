@@ -1,6 +1,7 @@
 import { useState, FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { createGuide } from "../services/guideApi";
+import { GUIDE_ICONS, DEFAULT_ICON } from "../assets/guide-icons";
 
 export default function AddGuidePage() {
   const navigate = useNavigate();
@@ -10,6 +11,7 @@ export default function AddGuidePage() {
   const [responseGuidelines, setResponseGuidelines] = useState("");
   const [voice, setVoice] = useState("coral");
   const [knowledge, setKnowledge] = useState("internal");
+  const [icon, setIcon] = useState(DEFAULT_ICON);
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -23,6 +25,7 @@ export default function AddGuidePage() {
         response_guidelines: responseGuidelines,
         voice,
         knowledge,
+        icon,
       });
       navigate(`/guidelines/${guide.id}`);
     } catch (err) {
@@ -113,6 +116,24 @@ export default function AddGuidePage() {
             <option value="internal">Internal</option>
             <option value="external">External</option>
           </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Guide Icon</label>
+          <p className="text-xs text-gray-500 mb-2">Select an icon for this guide</p>
+          <div className="flex gap-3">
+            {Object.entries(GUIDE_ICONS).map(([key, { src, label }]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setIcon(key)}
+                className={`p-2 rounded-lg border-2 transition-colors cursor-pointer ${
+                  icon === key ? "border-accent" : "border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                <img src={src} alt={label} className="w-14 h-14" />
+              </button>
+            ))}
+          </div>
         </div>
         <button
           type="submit"

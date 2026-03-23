@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getAllGuides, Guide } from "../services/guideApi";
 import backButton from "../assets/back-button.png";
+import { GUIDE_ICONS } from "../assets/guide-icons";
 
 export default function ChooseGuidePage() {
   const [guides, setGuides] = useState<Guide[]>([]);
@@ -35,11 +36,11 @@ export default function ChooseGuidePage() {
               to={`/guides/${guide.id}`}
               className="bg-cream rounded-xl border-2 border-gray-300 p-6 hover:shadow-lg transition-shadow flex items-start gap-4"
             >
-              <div className="flex-shrink-0 w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </div>
+              <img
+                src={GUIDE_ICONS[guide.icon]?.src || GUIDE_ICONS["art-expert"].src}
+                alt={guide.name}
+                className="flex-shrink-0 w-10 h-10 rounded-lg"
+              />
               <div>
                 <h3 className="font-serif text-xl font-bold text-gray-900">{guide.name}</h3>
                 <p className="text-sm text-gray-500 mt-1">{guide.description}</p>
