@@ -49,7 +49,7 @@ export default function ChooseGuidePage() {
         </div>
       )}
 
-      <Link to="/" className="self-start mt-auto pt-6">
+      <Link to="/" className="self-end mt-auto pt-6">
         <img src={backButton} alt="Back" className="w-12" />
       </Link>
     </div>
