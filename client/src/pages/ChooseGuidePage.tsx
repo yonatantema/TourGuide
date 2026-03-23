@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getAllGuides, Guide } from "../services/guideApi";
-import backButton from "../assets/back-button.jpeg";
+import backButton from "../assets/back-button.png";
 
 export default function ChooseGuidePage() {
   const [guides, setGuides] = useState<Guide[]>([]);

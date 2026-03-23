@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
 import { recognizeArtwork, getArtwork, Artwork, UPLOADS_URL } from "../services/artworkApi";
 import ConversationModal from "./ConversationPage";
-import backButton from "../assets/back-button.jpeg";
+import backButton from "../assets/back-button.png";
 
 type CameraStatus = "pending" | "active" | "denied";
 type RecognitionState = "idle" | "loading" | "not-recognized" | "recognized" | "conversation";
