@@ -50,6 +50,7 @@ export default function GuideTourPage() {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [recognizedArtwork, setRecognizedArtwork] = useState<Artwork | null>(null);
   const [language, setLanguage] = useState("english");
+  const [conversationKey, setConversationKey] = useState(0);
   const t = translations[language] || translations.english;
 
   useEffect(() => {
@@ -278,7 +279,7 @@ export default function GuideTourPage() {
                       <option value="french">French</option>
                     </select>
                     <button
-                      onClick={() => setRecognitionState("conversation")}
+                      onClick={() => { setConversationKey(k => k + 1); setRecognitionState("conversation"); }}
                       className="w-full py-2.5 bg-accent text-white rounded-md text-sm font-medium hover:opacity-80 transition-opacity cursor-pointer"
                     >
                       {t.talkAbout}
@@ -301,6 +302,7 @@ export default function GuideTourPage() {
       {/* Conversation modal */}
       {recognitionState === "conversation" && recognizedArtwork && id && (
         <ConversationModal
+          key={conversationKey}
           artwork={recognizedArtwork}
           guideId={Number(id)}
           language={language}
