@@ -91,6 +91,7 @@ export default function ConversationModal({
   const statusRef = useRef<ConversationStatus>("idle");
   const currentGuideTextRef = useRef("");
   const isStreamingGuideRef = useRef(false);
+  const guideEntryIndexRef = useRef(-1);
 
   useEffect(() => {
     statusRef.current = status;
@@ -215,11 +216,14 @@ export default function ConversationModal({
           currentGuideTextRef.current += data.delta;
           if (!isStreamingGuideRef.current) {
             isStreamingGuideRef.current = true;
-            setTranscriptLog(prev => [...prev, { speaker: "guide", text: currentGuideTextRef.current }]);
+            setTranscriptLog(prev => {
+              guideEntryIndexRef.current = prev.length;
+              return [...prev, { speaker: "guide", text: currentGuideTextRef.current }];
+            });
           } else {
             setTranscriptLog(prev => {
               const updated = [...prev];
-              updated[updated.length - 1] = { speaker: "guide", text: currentGuideTextRef.current };
+              updated[guideEntryIndexRef.current] = { speaker: "guide", text: currentGuideTextRef.current };
               return updated;
             });
           }
@@ -230,7 +234,7 @@ export default function ConversationModal({
           if (isStreamingGuideRef.current && text) {
             setTranscriptLog(prev => {
               const updated = [...prev];
-              updated[updated.length - 1] = { speaker: "guide", text };
+              updated[guideEntryIndexRef.current] = { speaker: "guide", text };
               return updated;
             });
           } else if (text) {
@@ -305,6 +309,7 @@ export default function ConversationModal({
       audioChunksRef.current = [];
       currentGuideTextRef.current = "";
       isStreamingGuideRef.current = false;
+      guideEntryIndexRef.current = -1;
 
       processor.onaudioprocess = (e) => {
         const inputData = e.inputBuffer.getChannelData(0);
