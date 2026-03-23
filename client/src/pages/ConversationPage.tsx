@@ -245,7 +245,16 @@ export default function ConversationModal({
         }
 
         if (data.type === "conversation.item.input_audio_transcription.completed") {
-          setTranscriptLog(prev => [...prev, { speaker: "visitor", text: data.transcript }]);
+          if (isStreamingGuideRef.current && guideEntryIndexRef.current >= 0) {
+            setTranscriptLog(prev => {
+              const updated = [...prev];
+              updated.splice(guideEntryIndexRef.current, 0, { speaker: "visitor", text: data.transcript });
+              return updated;
+            });
+            guideEntryIndexRef.current += 1;
+          } else {
+            setTranscriptLog(prev => [...prev, { speaker: "visitor", text: data.transcript }]);
+          }
         }
 
         if (data.type === "response.audio.done") {
