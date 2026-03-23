@@ -90,8 +90,6 @@ export default function ConversationModal({
   const playbackOffsetRef = useRef(0);
   const statusRef = useRef<ConversationStatus>("idle");
   const currentGuideTextRef = useRef("");
-  const isStreamingGuideRef = useRef(false);
-  const guideEntryIndexRef = useRef(-1);
 
   useEffect(() => {
     statusRef.current = status;
@@ -214,47 +212,18 @@ export default function ConversationModal({
 
         if (data.type === "response.audio_transcript.delta") {
           currentGuideTextRef.current += data.delta;
-          if (!isStreamingGuideRef.current) {
-            isStreamingGuideRef.current = true;
-            setTranscriptLog(prev => {
-              guideEntryIndexRef.current = prev.length;
-              return [...prev, { speaker: "guide", text: currentGuideTextRef.current }];
-            });
-          } else {
-            setTranscriptLog(prev => {
-              const updated = [...prev];
-              updated[guideEntryIndexRef.current] = { speaker: "guide", text: currentGuideTextRef.current };
-              return updated;
-            });
-          }
         }
 
         if (data.type === "response.audio_transcript.done") {
           const text = data.transcript || currentGuideTextRef.current;
-          if (isStreamingGuideRef.current && text) {
-            setTranscriptLog(prev => {
-              const updated = [...prev];
-              updated[guideEntryIndexRef.current] = { speaker: "guide", text };
-              return updated;
-            });
-          } else if (text) {
+          if (text) {
             setTranscriptLog(prev => [...prev, { speaker: "guide", text }]);
           }
           currentGuideTextRef.current = "";
-          isStreamingGuideRef.current = false;
         }
 
         if (data.type === "conversation.item.input_audio_transcription.completed") {
-          if (isStreamingGuideRef.current && guideEntryIndexRef.current >= 0) {
-            setTranscriptLog(prev => {
-              const updated = [...prev];
-              updated.splice(guideEntryIndexRef.current, 0, { speaker: "visitor", text: data.transcript });
-              return updated;
-            });
-            guideEntryIndexRef.current += 1;
-          } else {
-            setTranscriptLog(prev => [...prev, { speaker: "visitor", text: data.transcript }]);
-          }
+          setTranscriptLog(prev => [...prev, { speaker: "visitor", text: data.transcript }]);
         }
 
         if (data.type === "response.audio.done") {
@@ -317,8 +286,6 @@ export default function ConversationModal({
 
       audioChunksRef.current = [];
       currentGuideTextRef.current = "";
-      isStreamingGuideRef.current = false;
-      guideEntryIndexRef.current = -1;
 
       processor.onaudioprocess = (e) => {
         const inputData = e.inputBuffer.getChannelData(0);
