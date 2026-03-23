@@ -90,10 +90,15 @@ export default function ConversationModal({
   const playbackOffsetRef = useRef(0);
   const statusRef = useRef<ConversationStatus>("idle");
   const currentGuideTextRef = useRef("");
+  const transcriptEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     statusRef.current = status;
   }, [status]);
+
+  useEffect(() => {
+    transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [transcriptLog]);
 
   const cleanup = useCallback(() => {
     wsRef.current?.close();
@@ -546,6 +551,7 @@ export default function ConversationModal({
                   </p>
                 </div>
               ))}
+              <div ref={transcriptEndRef} />
             </div>
             {micActive && (
               <div className="flex flex-col items-center gap-2 py-3 border-t border-gray-200 flex-shrink-0">
