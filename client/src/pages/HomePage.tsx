@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import temaLogo from "../assets/tema-logo.png";
 
 export default function HomePage() {
   return (
@@ -27,7 +26,6 @@ export default function HomePage() {
           </Link>
         </div>
       </div>
-      <img src={temaLogo} alt="TEMA" className="absolute bottom-16 right-6 w-14" />
       <footer className="absolute bottom-6 text-sm text-gray-400">
         &copy; TEMA Creative 2026 - All Rights Reserved
       </footer>

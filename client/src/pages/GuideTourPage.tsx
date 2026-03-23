@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
 import { recognizeArtwork, getArtwork, Artwork, UPLOADS_URL } from "../services/artworkApi";
 import ConversationModal from "./ConversationPage";
-import temaLogo from "../assets/tema-logo.png";
+import backButton from "../assets/back-button.jpeg";
 
 type CameraStatus = "pending" | "active" | "denied";
 type RecognitionState = "idle" | "loading" | "not-recognized" | "recognized" | "conversation";
@@ -193,7 +193,7 @@ export default function GuideTourPage() {
           {t.switchGuide}
         </Link>
         <Link to="/">
-          <img src={temaLogo} alt="TEMA" className="w-14" />
+          <img src={backButton} alt="Back" className="w-12" />
         </Link>
       </div>
 

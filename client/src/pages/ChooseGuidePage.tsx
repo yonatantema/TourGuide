@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getAllGuides, Guide } from "../services/guideApi";
-import temaLogo from "../assets/tema-logo.png";
+import backButton from "../assets/back-button.jpeg";
 
 export default function ChooseGuidePage() {
   const [guides, setGuides] = useState<Guide[]>([]);
@@ -49,8 +49,8 @@ export default function ChooseGuidePage() {
         </div>
       )}
 
-      <Link to="/" className="self-end mt-auto pt-6">
-        <img src={temaLogo} alt="TEMA" className="w-14" />
+      <Link to="/" className="self-start mt-auto pt-6">
+        <img src={backButton} alt="Back" className="w-12" />
       </Link>
     </div>
   );
