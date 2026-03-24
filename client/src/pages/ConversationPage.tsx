@@ -481,12 +481,14 @@ export default function ConversationModal({
     if (status === "recording") {
       stopRecording();
     } else if (status === "ready" || status === "playing" || status === "processing") {
-      // Interrupt AI: cancel server response, stop playback, start recording
-      const ws = wsRef.current;
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: "response.cancel" }));
+      // Only cancel if AI is actively responding
+      if (status === "playing" || status === "processing") {
+        const ws = wsRef.current;
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: "response.cancel" }));
+        }
+        stopPlayback();
       }
-      stopPlayback();
       startRecording();
     }
   };
