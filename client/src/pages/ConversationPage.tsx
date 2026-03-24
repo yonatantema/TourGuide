@@ -361,6 +361,8 @@ export default function ConversationModal({
 
         if (data.type === "error") {
           console.error("Realtime API error:", data.error);
+          // Ignore cancel errors (harmless, from response.cancel when no active response)
+          if (data.error?.code === "response_cancel_not_active") return;
           // Ignore errors while recording — likely from response.cancel
           if (statusRef.current !== "recording") {
             setErrorDetail(`API error: ${JSON.stringify(data.error)}`);
