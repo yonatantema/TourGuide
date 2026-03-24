@@ -88,6 +88,9 @@ export default function ConversationModal({
   const wsRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const micSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const micMuteGainRef = useRef<GainNode | null>(null);
+  const micGraphStreamRef = useRef<MediaStream | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
   const audioChunksRef = useRef<Int16Array[]>([]);
   const playbackCtxRef = useRef<AudioContext | null>(null);
@@ -99,6 +102,7 @@ export default function ConversationModal({
   const transcriptEndRef = useRef<HTMLDivElement>(null);
   const originalAudioSessionTypeRef = useRef<string | null>(null);
   const audioSessionManagedRef = useRef(false);
+  const isRecordingRef = useRef(false);
 
   useEffect(() => {
     statusRef.current = status;
@@ -137,8 +141,14 @@ export default function ConversationModal({
     wsRef.current = null;
     micStreamRef.current?.getTracks().forEach((t) => t.stop());
     micStreamRef.current = null;
+    isRecordingRef.current = false;
     processorRef.current?.disconnect();
     processorRef.current = null;
+    micSourceRef.current?.disconnect();
+    micSourceRef.current = null;
+    micMuteGainRef.current?.disconnect();
+    micMuteGainRef.current = null;
+    micGraphStreamRef.current = null;
     audioContextRef.current?.close();
     audioContextRef.current = null;
     playbackProcessorRef.current?.disconnect();
@@ -206,6 +216,58 @@ export default function ConversationModal({
     playbackCtxRef.current = null;
     playbackBufferRef.current = [];
     playbackOffsetRef.current = 0;
+  };
+
+  const ensureRecordingGraph = async (stream: MediaStream) => {
+    let ctx = audioContextRef.current;
+    let processor = processorRef.current;
+    const streamChanged = micGraphStreamRef.current !== stream;
+
+    if (streamChanged) {
+      processorRef.current?.disconnect();
+      processorRef.current = null;
+      micSourceRef.current?.disconnect();
+      micSourceRef.current = null;
+      micMuteGainRef.current?.disconnect();
+      micMuteGainRef.current = null;
+      audioContextRef.current?.close();
+      audioContextRef.current = null;
+      ctx = null;
+      processor = null;
+    }
+
+    if (!ctx || !processor || !micSourceRef.current || !micMuteGainRef.current) {
+      ctx = new AudioContext();
+      audioContextRef.current = ctx;
+      micGraphStreamRef.current = stream;
+
+      const source = ctx.createMediaStreamSource(stream);
+      micSourceRef.current = source;
+
+      processor = ctx.createScriptProcessor(4096, 1, 1);
+      processorRef.current = processor;
+
+      const muteGain = ctx.createGain();
+      muteGain.gain.value = 0;
+      micMuteGainRef.current = muteGain;
+
+      processor.onaudioprocess = (e) => {
+        if (!isRecordingRef.current) return;
+
+        const inputData = e.inputBuffer.getChannelData(0);
+        const resampled = resampleTo24kHz(inputData, ctx!.sampleRate);
+        const pcm16 = float32ToPcm16(resampled);
+        audioChunksRef.current.push(pcm16);
+      };
+
+      source.connect(processor);
+      processor.connect(muteGain);
+      muteGain.connect(ctx.destination);
+    }
+
+    if (ctx.state === "suspended") {
+      await ctx.resume();
+    }
   };
 
   const handleStartConversation = async () => {
@@ -319,24 +381,11 @@ export default function ConversationModal({
         micStreamRef.current = stream;
       }
 
-      const ctx = new AudioContext();
-      audioContextRef.current = ctx;
-      const source = ctx.createMediaStreamSource(stream);
-      const processor = ctx.createScriptProcessor(4096, 1, 1);
-      processorRef.current = processor;
+      await ensureRecordingGraph(stream);
 
       audioChunksRef.current = [];
       currentGuideTextRef.current = "";
-
-      processor.onaudioprocess = (e) => {
-        const inputData = e.inputBuffer.getChannelData(0);
-        const resampled = resampleTo24kHz(inputData, ctx.sampleRate);
-        const pcm16 = float32ToPcm16(resampled);
-        audioChunksRef.current.push(pcm16);
-      };
-
-      source.connect(processor);
-      processor.connect(ctx.destination);
+      isRecordingRef.current = true;
       setStatus("recording");
     } catch (err) {
       console.error("Microphone access failed:", err);
@@ -345,11 +394,7 @@ export default function ConversationModal({
   };
 
   const stopRecording = () => {
-    processorRef.current?.disconnect();
-    processorRef.current = null;
-    // Keep mic stream alive for reuse — only close AudioContext
-    audioContextRef.current?.close();
-    audioContextRef.current = null;
+    isRecordingRef.current = false;
 
     const ws = wsRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) {
