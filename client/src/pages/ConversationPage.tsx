@@ -322,6 +322,9 @@ export default function ConversationModal({
           const float32 = pcm16ToFloat32(pcm16);
           enqueueAudio(float32);
           if (statusRef.current !== "playing") {
+            // Release mic before switching to playback (unlocks iOS volume)
+            micStreamRef.current?.getTracks().forEach(t => t.stop());
+            micStreamRef.current = null;
             setAudioSessionType("playback");
             setStatus("playing");
           }
@@ -469,11 +472,8 @@ export default function ConversationModal({
 
     ws.send(JSON.stringify({ type: "input_audio_buffer.commit" }));
     ws.send(JSON.stringify({ type: "response.create" }));
+    setErrorDetail(`Sent ${combined.length} samples, rms=${Math.round(rms)}, ws=${ws.readyState}`);
     setStatus("processing");
-
-    // Release mic so iOS exits play-and-record mode, unlocking volume
-    micStreamRef.current?.getTracks().forEach(t => t.stop());
-    micStreamRef.current = null;
   };
 
   const handleMicClick = () => {
