@@ -51,6 +51,7 @@ export default function GuideTourPage() {
   const [recognizedArtwork, setRecognizedArtwork] = useState<Artwork | null>(null);
   const [language, setLanguage] = useState("english");
   const [conversationKey, setConversationKey] = useState(0);
+  const [cameraKey, setCameraKey] = useState(0);
   const t = translations[language] || translations.english;
 
   useEffect(() => {
@@ -60,8 +61,16 @@ export default function GuideTourPage() {
     }
   }, []);
 
-  const startCamera = () => {
+  const stopCamera = () => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+  };
+
+  const startCamera = () => {
+    stopCamera();
     navigator.mediaDevices
       .getUserMedia({ video: { facingMode: "environment" } })
       .then((s) => {
@@ -75,7 +84,7 @@ export default function GuideTourPage() {
         s.getVideoTracks().forEach((track) => {
           track.onended = () => {
             setCameraStatus("pending");
-            startCamera();
+            reloadCamera();
           };
         });
       })
@@ -84,27 +93,33 @@ export default function GuideTourPage() {
       });
   };
 
+  const reloadCamera = () => {
+    stopCamera();
+    setTimeout(() => {
+      setCameraKey((k) => k + 1);
+      startCamera();
+    }, 100);
+  };
+
   useEffect(() => {
     startCamera();
-    return () => {
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-    };
+    return () => stopCamera();
   }, []);
 
   useEffect(() => {
     const handleVisibility = () => {
-      if (document.visibilityState === "visible") {
-        const tracks = streamRef.current?.getVideoTracks() || [];
-        const alive = tracks.some((t) => t.readyState === "live");
-        if (!alive) {
+      if (document.visibilityState === "hidden") {
+        stopCamera();
+      } else if (document.visibilityState === "visible") {
+        if (!capturedImage) {
           setCameraStatus("pending");
-          startCamera();
+          reloadCamera();
         }
       }
     };
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, []);
+  }, [capturedImage]);
 
   const handleCapture = async () => {
     if (!videoRef.current) return;
@@ -180,6 +195,7 @@ export default function GuideTourPage() {
 
         <div className={cameraStatus === "active" ? "relative" : "hidden"}>
           <video
+            key={cameraKey}
             ref={videoRef}
             autoPlay
             playsInline
