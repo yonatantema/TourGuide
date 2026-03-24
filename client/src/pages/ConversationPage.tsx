@@ -76,8 +76,6 @@ export default function ConversationModal({
   onClose,
 }: ConversationModalProps) {
   const [status, setStatus] = useState<ConversationStatus>("idle");
-  const [errorDetail, setErrorDetail] = useState("");
-  const [debugInfo, setDebugInfo] = useState("");
   const [transcriptLog, setTranscriptLog] = useState<{ speaker: "guide" | "visitor"; text: string }[]>([]);
   const [showTranscript, setShowTranscript] = useState(false);
 
@@ -101,17 +99,6 @@ export default function ConversationModal({
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [transcriptLog]);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const info = [
-        `ctx: ${audioContextRef.current?.state ?? "none"}`,
-        `status: ${statusRef.current}`,
-        `sched: ${playbackScheduleTimeRef.current.toFixed(1)}`,
-      ].join(" | ");
-      setDebugInfo(info);
-    }, 500);
-    return () => clearInterval(interval);
-  }, []);
 
   const cleanup = useCallback(() => {
     wsRef.current?.close();
@@ -254,14 +241,14 @@ export default function ConversationModal({
           if (data.error?.code === "response_cancel_not_active") return;
           // Ignore errors while recording — likely from response.cancel
           if (statusRef.current !== "recording") {
-            setErrorDetail(`API error: ${JSON.stringify(data.error)}`);
+
             setStatus("error");
           }
         }
       };
 
       ws.onerror = (e) => {
-        setErrorDetail(`WebSocket error: ${(e as any)?.message || "connection failed"}`);
+
         setStatus("error");
       };
 
@@ -270,7 +257,7 @@ export default function ConversationModal({
           statusRef.current !== "idle" &&
           statusRef.current !== "error"
         ) {
-          setErrorDetail(`WebSocket closed: code=${e.code} reason="${e.reason}"`);
+
           setStatus("error");
         }
       };
@@ -278,7 +265,7 @@ export default function ConversationModal({
       wsRef.current = ws;
     } catch (err: any) {
       console.error("Failed to start conversation:", err);
-      setErrorDetail(`Catch: ${err?.message || String(err)}`);
+
       setStatus("error");
     }
   };
@@ -426,8 +413,6 @@ export default function ConversationModal({
           <p className="text-gray-500 text-sm mt-1">{artwork.artist_name}</p>
         </div>
 
-        {debugInfo && <p className="text-[10px] text-gray-400 text-center break-all">{debugInfo}</p>}
-
         {/* Idle state — Start button */}
         {status === "idle" && (
           <button
@@ -499,7 +484,6 @@ export default function ConversationModal({
         {status === "error" && (
           <div className="flex flex-col items-center gap-3 flex-shrink-0">
             <p className="text-gray-500 text-sm">Something went wrong</p>
-            {errorDetail && <p className="text-red-400 text-xs mt-1 break-all">{errorDetail}</p>}
             <button
               onClick={() => {
                 cleanup();
