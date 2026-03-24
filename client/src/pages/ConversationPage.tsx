@@ -315,6 +315,7 @@ export default function ConversationModal({
       ws.onopen = () => {
         // Trigger initial AI greeting
         ws.send(JSON.stringify({ type: "response.create" }));
+        setAudioSessionType("playback");
         setStatus("playing");
       };
 
