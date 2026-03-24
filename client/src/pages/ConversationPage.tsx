@@ -69,12 +69,6 @@ interface ConversationModalProps {
   onClose: () => void;
 }
 
-type NavigatorWithAudioSession = Navigator & {
-  audioSession?: {
-    type?: string;
-  };
-};
-
 export default function ConversationModal({
   artwork,
   guideId,
@@ -90,21 +84,13 @@ export default function ConversationModal({
   const wsRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
-  const micSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const micMuteGainRef = useRef<GainNode | null>(null);
-  const micGraphStreamRef = useRef<MediaStream | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
   const audioChunksRef = useRef<Int16Array[]>([]);
-  const playbackCtxRef = useRef<AudioContext | null>(null);
-  const playbackProcessorRef = useRef<ScriptProcessorNode | null>(null);
-  const playbackBufferRef = useRef<Float32Array[]>([]);
-  const playbackOffsetRef = useRef(0);
   const statusRef = useRef<ConversationStatus>("idle");
   const currentGuideTextRef = useRef("");
   const transcriptEndRef = useRef<HTMLDivElement>(null);
-  const originalAudioSessionTypeRef = useRef<string | null>(null);
-  const audioSessionManagedRef = useRef(false);
   const isRecordingRef = useRef(false);
+  const playbackScheduleTimeRef = useRef(0);
 
   useEffect(() => {
     statusRef.current = status;
@@ -116,44 +102,14 @@ export default function ConversationModal({
 
   useEffect(() => {
     const interval = setInterval(() => {
-      const audioSession = (navigator as NavigatorWithAudioSession).audioSession;
       const info = [
-        `session: ${audioSession?.type ?? "N/A"}`,
+        `ctx: ${audioContextRef.current?.state ?? "none"}`,
         `status: ${statusRef.current}`,
-        `playCtx: ${playbackCtxRef.current ? playbackCtxRef.current.state : "none"}`,
-        `recCtx: ${audioContextRef.current ? audioContextRef.current.state : "none"}`,
+        `sched: ${playbackScheduleTimeRef.current.toFixed(1)}`,
       ].join(" | ");
       setDebugInfo(info);
     }, 500);
     return () => clearInterval(interval);
-  }, []);
-
-  const setAudioSessionType = useCallback((type: "play-and-record" | "playback" | "auto") => {
-    const audioSession = (navigator as NavigatorWithAudioSession).audioSession;
-    if (!audioSession) return;
-
-    if (!audioSessionManagedRef.current && type !== "auto") {
-      originalAudioSessionTypeRef.current = audioSession.type ?? null;
-      audioSessionManagedRef.current = true;
-    }
-
-    audioSession.type = type;
-
-    if (type === "auto") {
-      audioSessionManagedRef.current = false;
-    }
-  }, []);
-
-  const restoreAudioSession = useCallback(() => {
-    const audioSession = (navigator as NavigatorWithAudioSession).audioSession;
-    if (!audioSessionManagedRef.current) return;
-
-    if (audioSession) {
-      audioSession.type = originalAudioSessionTypeRef.current ?? "auto";
-    }
-
-    originalAudioSessionTypeRef.current = null;
-    audioSessionManagedRef.current = false;
   }, []);
 
   const cleanup = useCallback(() => {
@@ -164,140 +120,61 @@ export default function ConversationModal({
     isRecordingRef.current = false;
     processorRef.current?.disconnect();
     processorRef.current = null;
-    micSourceRef.current?.disconnect();
-    micSourceRef.current = null;
-    micMuteGainRef.current?.disconnect();
-    micMuteGainRef.current = null;
-    micGraphStreamRef.current = null;
     audioContextRef.current?.close();
     audioContextRef.current = null;
-    playbackProcessorRef.current?.disconnect();
-    playbackProcessorRef.current = null;
-    playbackCtxRef.current?.close();
-    playbackCtxRef.current = null;
-    playbackBufferRef.current = [];
-    playbackOffsetRef.current = 0;
+    playbackScheduleTimeRef.current = 0;
     audioChunksRef.current = [];
-    restoreAudioSession();
-  }, [restoreAudioSession]);
+  }, []);
 
   useEffect(() => {
     return cleanup;
   }, [cleanup]);
 
-  const ensurePlaybackStream = () => {
-    if (playbackCtxRef.current) return;
-    const ctx = new AudioContext({ sampleRate: 24000 });
-    playbackCtxRef.current = ctx;
-    const processor = ctx.createScriptProcessor(2048, 1, 1);
-    playbackProcessorRef.current = processor;
-
-    processor.onaudioprocess = (e) => {
-      const output = e.outputBuffer.getChannelData(0);
-      let written = 0;
-      while (written < output.length && playbackBufferRef.current.length > 0) {
-        const chunk = playbackBufferRef.current[0];
-        const offset = playbackOffsetRef.current;
-        const remaining = chunk.length - offset;
-        const needed = output.length - written;
-        if (remaining <= needed) {
-          output.set(chunk.subarray(offset), written);
-          written += remaining;
-          playbackBufferRef.current.shift();
-          playbackOffsetRef.current = 0;
-        } else {
-          output.set(chunk.subarray(offset, offset + needed), written);
-          written += needed;
-          playbackOffsetRef.current = offset + needed;
-        }
-      }
-      for (let i = written; i < output.length; i++) {
-        output[i] = 0;
-      }
-    };
-
-    // Silent input to keep the processor firing
-    const silent = ctx.createConstantSource();
-    silent.offset.value = 0;
-    silent.connect(processor);
-    processor.connect(ctx.destination);
-    silent.start();
-  };
-
+  // Playback: schedule AudioBufferSource nodes for gapless playback
   const enqueueAudio = (float32: Float32Array) => {
-    ensurePlaybackStream();
-    playbackBufferRef.current.push(float32);
+    const ctx = audioContextRef.current;
+    if (!ctx) return;
+    // Create AudioBuffer at 24kHz — iOS resamples to native rate internally
+    const audioBuffer = ctx.createBuffer(1, float32.length, 24000);
+    audioBuffer.getChannelData(0).set(float32);
+    const source = ctx.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(ctx.destination);
+    // Schedule gapless playback
+    const now = ctx.currentTime;
+    const startTime = Math.max(now, playbackScheduleTimeRef.current);
+    source.start(startTime);
+    playbackScheduleTimeRef.current = startTime + audioBuffer.duration;
   };
 
   const stopPlayback = () => {
-    playbackProcessorRef.current?.disconnect();
-    playbackProcessorRef.current = null;
-    playbackCtxRef.current?.close();
-    playbackCtxRef.current = null;
-    playbackBufferRef.current = [];
-    playbackOffsetRef.current = 0;
-  };
-
-  const ensureRecordingGraph = async (stream: MediaStream) => {
-    let ctx = audioContextRef.current;
-    let processor = processorRef.current;
-    const streamChanged = micGraphStreamRef.current !== stream;
-
-    if (streamChanged) {
-      processorRef.current?.disconnect();
-      processorRef.current = null;
-      micSourceRef.current?.disconnect();
-      micSourceRef.current = null;
-      micMuteGainRef.current?.disconnect();
-      micMuteGainRef.current = null;
-      audioContextRef.current?.close();
-      audioContextRef.current = null;
-      ctx = null;
-      processor = null;
-    }
-
-    if (!ctx || !processor || !micSourceRef.current || !micMuteGainRef.current) {
-      ctx = new AudioContext();
-      audioContextRef.current = ctx;
-      micGraphStreamRef.current = stream;
-
-      const source = ctx.createMediaStreamSource(stream);
-      micSourceRef.current = source;
-
-      processor = ctx.createScriptProcessor(4096, 1, 1);
-      processorRef.current = processor;
-
-      const muteGain = ctx.createGain();
-      muteGain.gain.value = 0;
-      micMuteGainRef.current = muteGain;
-
-      processor.onaudioprocess = (e) => {
-        if (!isRecordingRef.current) return;
-
-        const inputData = e.inputBuffer.getChannelData(0);
-        const resampled = resampleTo24kHz(inputData, ctx!.sampleRate);
-        const pcm16 = float32ToPcm16(resampled);
-        audioChunksRef.current.push(pcm16);
-      };
-
-      source.connect(processor);
-      processor.connect(muteGain);
-      muteGain.connect(ctx.destination);
-    }
-
-    if (ctx.state === "suspended") {
-      await ctx.resume();
-    }
+    // Reset schedule time — next audio starts immediately
+    playbackScheduleTimeRef.current = 0;
   };
 
   const handleStartConversation = async () => {
     setStatus("connecting");
 
     try {
+      // Get mic permission early (temp stream, immediately stopped)
+      const tempStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      tempStream.getTracks().forEach(t => t.stop());
+
+      // Create single shared AudioContext at native sample rate
+      const ctx = new AudioContext({ latencyHint: "interactive" } as any);
+      audioContextRef.current = ctx;
+
+      // Play silent buffer to unlock iOS audio
+      const silentBuffer = ctx.createBuffer(1, 1, ctx.sampleRate);
+      const silentSource = ctx.createBufferSource();
+      silentSource.buffer = silentBuffer;
+      silentSource.connect(ctx.destination);
+      silentSource.start();
+
       const { clientSecret } = await createRealtimeSession(guideId, artwork.id, language);
 
       const ws = new WebSocket(
-        "wss://api.openai.com/v1/realtime?model=gpt-realtime-2025-08-28",
+        "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2025-06-03",
         [
           "realtime",
           `openai-insecure-api-key.${clientSecret}`,
@@ -345,15 +222,15 @@ export default function ConversationModal({
         if (data.type === "response.audio.done") {
           // Only transition to ready if still in playing state
           if (statusRef.current !== "playing") return;
-          // Wait for the playback buffer to drain before transitioning
-          const checkDrained = setInterval(() => {
-            if (playbackBufferRef.current.length === 0) {
-              clearInterval(checkDrained);
-              if (statusRef.current === "playing") {
-                setStatus("ready");
-              }
+          // Wait for scheduled playback to finish
+          const ctx = audioContextRef.current;
+          if (!ctx) return;
+          const waitTime = Math.max(0, (playbackScheduleTimeRef.current - ctx.currentTime) * 1000);
+          setTimeout(() => {
+            if (statusRef.current === "playing") {
+              setStatus("ready");
             }
-          }, 100);
+          }, waitTime + 100);
         }
 
         if (data.type === "error") {
@@ -385,7 +262,6 @@ export default function ConversationModal({
 
       wsRef.current = ws;
     } catch (err: any) {
-      restoreAudioSession();
       console.error("Failed to start conversation:", err);
       setErrorDetail(`Catch: ${err?.message || String(err)}`);
       setStatus("error");
@@ -401,8 +277,29 @@ export default function ConversationModal({
         micStreamRef.current = stream;
       }
 
-      setAudioSessionType("play-and-record");
-      await ensureRecordingGraph(stream);
+      const ctx = audioContextRef.current!;
+      if (ctx.state === "suspended") await ctx.resume();
+
+      // Disconnect old recording nodes if any
+      processorRef.current?.disconnect();
+
+      const source = ctx.createMediaStreamSource(stream);
+      const processor = ctx.createScriptProcessor(4096, 1, 1);
+      processorRef.current = processor;
+      const muteGain = ctx.createGain();
+      muteGain.gain.value = 0;
+
+      processor.onaudioprocess = (e) => {
+        if (!isRecordingRef.current) return;
+        const inputData = e.inputBuffer.getChannelData(0);
+        const resampled = resampleTo24kHz(inputData, ctx.sampleRate);
+        const pcm16 = float32ToPcm16(resampled);
+        audioChunksRef.current.push(pcm16);
+      };
+
+      source.connect(processor);
+      processor.connect(muteGain);
+      muteGain.connect(ctx.destination);
 
       audioChunksRef.current = [];
       currentGuideTextRef.current = "";
@@ -416,6 +313,8 @@ export default function ConversationModal({
 
   const stopRecording = () => {
     isRecordingRef.current = false;
+    processorRef.current?.disconnect();
+    processorRef.current = null;
 
     const ws = wsRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) {
@@ -465,34 +364,7 @@ export default function ConversationModal({
 
     ws.send(JSON.stringify({ type: "input_audio_buffer.commit" }));
     ws.send(JSON.stringify({ type: "response.create" }));
-    setErrorDetail(`Sent ${combined.length} samples, rms=${Math.round(rms)}, ws=${ws.readyState}`);
     setStatus("processing");
-
-    // Delay full teardown so iOS exits play-and-record mode and restores full volume
-    setTimeout(() => {
-      // Only tear down if still waiting for AI response (not interrupted)
-      if (statusRef.current !== "processing") return;
-      processorRef.current?.disconnect();
-      processorRef.current = null;
-      micSourceRef.current?.disconnect();
-      micSourceRef.current = null;
-      micMuteGainRef.current?.disconnect();
-      micMuteGainRef.current = null;
-      micGraphStreamRef.current = null;
-      audioContextRef.current?.close();
-      audioContextRef.current = null;
-      micStreamRef.current?.getTracks().forEach(t => t.stop());
-      micStreamRef.current = null;
-      // Also close playback context so it gets recreated at full volume
-      playbackProcessorRef.current?.disconnect();
-      playbackProcessorRef.current = null;
-      playbackCtxRef.current?.close();
-      playbackCtxRef.current = null;
-      playbackBufferRef.current = [];
-      playbackOffsetRef.current = 0;
-      // Signal iOS to switch back to full-volume playback mode
-      setAudioSessionType("playback");
-    }, 100);
   };
 
   const handleMicClick = () => {
