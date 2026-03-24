@@ -82,6 +82,7 @@ export default function ConversationModal({
   onClose,
 }: ConversationModalProps) {
   const [status, setStatus] = useState<ConversationStatus>("idle");
+  const [errorDetail, setErrorDetail] = useState("");
   const [transcriptLog, setTranscriptLog] = useState<{ speaker: "guide" | "visitor"; text: string }[]>([]);
   const [showTranscript, setShowTranscript] = useState(false);
 
@@ -353,28 +354,32 @@ export default function ConversationModal({
           console.error("Realtime API error:", data.error);
           // Ignore errors while recording — likely from response.cancel
           if (statusRef.current !== "recording") {
+            setErrorDetail(`API error: ${JSON.stringify(data.error)}`);
             setStatus("error");
           }
         }
       };
 
-      ws.onerror = () => {
+      ws.onerror = (e) => {
+        setErrorDetail(`WebSocket error: ${(e as any)?.message || "connection failed"}`);
         setStatus("error");
       };
 
-      ws.onclose = () => {
+      ws.onclose = (e) => {
         if (
           statusRef.current !== "idle" &&
           statusRef.current !== "error"
         ) {
+          setErrorDetail(`WebSocket closed: code=${e.code} reason="${e.reason}"`);
           setStatus("error");
         }
       };
 
       wsRef.current = ws;
-    } catch (err) {
+    } catch (err: any) {
       restoreAudioSession();
       console.error("Failed to start conversation:", err);
+      setErrorDetail(`Catch: ${err?.message || String(err)}`);
       setStatus("error");
     }
   };
@@ -569,6 +574,7 @@ export default function ConversationModal({
         {status === "error" && (
           <div className="flex flex-col items-center gap-3 flex-shrink-0">
             <p className="text-gray-500 text-sm">Something went wrong</p>
+            {errorDetail && <p className="text-red-400 text-xs mt-1 break-all">{errorDetail}</p>}
             <button
               onClick={() => {
                 cleanup();
