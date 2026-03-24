@@ -86,6 +86,7 @@ export default function ConversationModal({
   const audioChunksRef = useRef<Int16Array[]>([]);
   const playbackCtxRef = useRef<AudioContext | null>(null);
   const playbackProcessorRef = useRef<ScriptProcessorNode | null>(null);
+  const playbackGainRef = useRef<GainNode | null>(null);
   const playbackBufferRef = useRef<Float32Array[]>([]);
   const playbackOffsetRef = useRef(0);
   const statusRef = useRef<ConversationStatus>("idle");
@@ -111,6 +112,8 @@ export default function ConversationModal({
     audioContextRef.current = null;
     playbackProcessorRef.current?.disconnect();
     playbackProcessorRef.current = null;
+    playbackGainRef.current?.disconnect();
+    playbackGainRef.current = null;
     playbackCtxRef.current?.close();
     playbackCtxRef.current = null;
     playbackBufferRef.current = [];
@@ -153,11 +156,17 @@ export default function ConversationModal({
       }
     };
 
+    // Volume control — reduces max output for Bluetooth speakers
+    const gain = ctx.createGain();
+    gain.gain.value = 0.6;
+    playbackGainRef.current = gain;
+
     // Silent input to keep the processor firing
     const silent = ctx.createConstantSource();
     silent.offset.value = 0;
     silent.connect(processor);
-    processor.connect(ctx.destination);
+    processor.connect(gain);
+    gain.connect(ctx.destination);
     silent.start();
   };
 
@@ -169,6 +178,8 @@ export default function ConversationModal({
   const stopPlayback = () => {
     playbackProcessorRef.current?.disconnect();
     playbackProcessorRef.current = null;
+    playbackGainRef.current?.disconnect();
+    playbackGainRef.current = null;
     playbackCtxRef.current?.close();
     playbackCtxRef.current = null;
     playbackBufferRef.current = [];
