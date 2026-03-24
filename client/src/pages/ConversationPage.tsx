@@ -294,13 +294,6 @@ export default function ConversationModal({
     setStatus("connecting");
 
     try {
-      // Must use play-and-record to allow mic access on iOS
-      setAudioSessionType("play-and-record");
-
-      // Request mic access immediately so the browser prompts the user
-      const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      micStreamRef.current = micStream;
-
       const { clientSecret } = await createRealtimeSession(guideId, artwork.id, language);
 
       const ws = new WebSocket(
@@ -315,7 +308,6 @@ export default function ConversationModal({
       ws.onopen = () => {
         // Trigger initial AI greeting
         ws.send(JSON.stringify({ type: "response.create" }));
-        setAudioSessionType("playback");
         setStatus("playing");
       };
 
