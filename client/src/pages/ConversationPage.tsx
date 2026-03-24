@@ -468,6 +468,10 @@ export default function ConversationModal({
     ws.send(JSON.stringify({ type: "input_audio_buffer.commit" }));
     ws.send(JSON.stringify({ type: "response.create" }));
     setStatus("processing");
+
+    // Release mic so iOS exits play-and-record mode, unlocking volume
+    micStreamRef.current?.getTracks().forEach(t => t.stop());
+    micStreamRef.current = null;
   };
 
   const handleMicClick = () => {
