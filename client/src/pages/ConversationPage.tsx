@@ -279,7 +279,8 @@ export default function ConversationModal({
     setStatus("connecting");
 
     try {
-      setAudioSessionType("playback");
+      // Must use play-and-record to allow mic access on iOS
+      setAudioSessionType("play-and-record");
 
       // Request mic access immediately so the browser prompts the user
       const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
