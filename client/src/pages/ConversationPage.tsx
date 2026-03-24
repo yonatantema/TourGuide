@@ -322,10 +322,6 @@ export default function ConversationModal({
           const float32 = pcm16ToFloat32(pcm16);
           enqueueAudio(float32);
           if (statusRef.current !== "playing") {
-            // Release mic before switching to playback (unlocks iOS volume)
-            micStreamRef.current?.getTracks().forEach(t => t.stop());
-            micStreamRef.current = null;
-            setAudioSessionType("playback");
             setStatus("playing");
           }
         }
@@ -355,8 +351,6 @@ export default function ConversationModal({
               clearInterval(checkDrained);
               if (statusRef.current === "playing") {
                 setStatus("ready");
-                setAudioSessionType("auto");
-                stopPlayback();
               }
             }
           }, 100);
@@ -422,7 +416,6 @@ export default function ConversationModal({
 
   const stopRecording = () => {
     isRecordingRef.current = false;
-    setAudioSessionType("playback");
 
     const ws = wsRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) {
