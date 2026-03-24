@@ -470,6 +470,8 @@ export default function ConversationModal({
 
     // Delay full teardown so iOS exits play-and-record mode and restores full volume
     setTimeout(() => {
+      // Only tear down if still waiting for AI response (not interrupted)
+      if (statusRef.current !== "processing") return;
       processorRef.current?.disconnect();
       processorRef.current = null;
       micSourceRef.current?.disconnect();
