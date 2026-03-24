@@ -91,6 +91,7 @@ export default function ConversationModal({
   const transcriptEndRef = useRef<HTMLDivElement>(null);
   const isRecordingRef = useRef(false);
   const playbackScheduleTimeRef = useRef(0);
+  const playbackGainRef = useRef<GainNode | null>(null);
 
   useEffect(() => {
     statusRef.current = status;
@@ -120,6 +121,8 @@ export default function ConversationModal({
     isRecordingRef.current = false;
     processorRef.current?.disconnect();
     processorRef.current = null;
+    playbackGainRef.current?.disconnect();
+    playbackGainRef.current = null;
     audioContextRef.current?.close();
     audioContextRef.current = null;
     playbackScheduleTimeRef.current = 0;
@@ -139,7 +142,7 @@ export default function ConversationModal({
     audioBuffer.getChannelData(0).set(float32);
     const source = ctx.createBufferSource();
     source.buffer = audioBuffer;
-    source.connect(ctx.destination);
+    source.connect(playbackGainRef.current || ctx.destination);
     // Schedule gapless playback
     const now = ctx.currentTime;
     const startTime = Math.max(now, playbackScheduleTimeRef.current);
@@ -148,8 +151,15 @@ export default function ConversationModal({
   };
 
   const stopPlayback = () => {
-    // Reset schedule time — next audio starts immediately
     playbackScheduleTimeRef.current = 0;
+    // Disconnect old gain node to instantly silence all playing sources
+    playbackGainRef.current?.disconnect();
+    const ctx = audioContextRef.current;
+    if (ctx) {
+      const gain = ctx.createGain();
+      gain.connect(ctx.destination);
+      playbackGainRef.current = gain;
+    }
   };
 
   const handleStartConversation = async () => {
@@ -163,6 +173,11 @@ export default function ConversationModal({
       // Create single shared AudioContext at native sample rate
       const ctx = new AudioContext({ latencyHint: "interactive" } as any);
       audioContextRef.current = ctx;
+
+      // Create shared gain node for playback (enables instant stop on interrupt)
+      const gain = ctx.createGain();
+      gain.connect(ctx.destination);
+      playbackGainRef.current = gain;
 
       // Play silent buffer to unlock iOS audio
       const silentBuffer = ctx.createBuffer(1, 1, ctx.sampleRate);
