@@ -100,7 +100,6 @@ export default function ConversationModal({
   const statusRef = useRef<ConversationStatus>("idle");
   const currentGuideTextRef = useRef("");
   const transcriptEndRef = useRef<HTMLDivElement>(null);
-  const originalAudioSessionTypeRef = useRef<string | null>(null);
   const audioSessionManagedRef = useRef(false);
   const isRecordingRef = useRef(false);
 
@@ -112,15 +111,17 @@ export default function ConversationModal({
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [transcriptLog]);
 
-  const setConversationAudioSession = useCallback(() => {
+  const prepareConversationAudioSession = useCallback(() => {
     const audioSession = (navigator as NavigatorWithAudioSession).audioSession;
     if (!audioSession) return;
+    audioSessionManagedRef.current = true;
+    audioSession.type = "auto";
+  }, []);
 
-    if (!audioSessionManagedRef.current) {
-      originalAudioSessionTypeRef.current = audioSession.type ?? null;
-      audioSessionManagedRef.current = true;
-    }
-
+  const activateConversationAudioSession = useCallback(() => {
+    const audioSession = (navigator as NavigatorWithAudioSession).audioSession;
+    if (!audioSession) return;
+    audioSessionManagedRef.current = true;
     audioSession.type = "play-and-record";
   }, []);
 
@@ -129,10 +130,10 @@ export default function ConversationModal({
     if (!audioSessionManagedRef.current) return;
 
     if (audioSession) {
-      audioSession.type = originalAudioSessionTypeRef.current ?? "auto";
+      audioSession.type = "playback";
+      audioSession.type = "auto";
     }
 
-    originalAudioSessionTypeRef.current = null;
     audioSessionManagedRef.current = false;
   }, []);
 
@@ -274,11 +275,12 @@ export default function ConversationModal({
     setStatus("connecting");
 
     try {
-      setConversationAudioSession();
+      prepareConversationAudioSession();
 
       // Request mic access immediately so the browser prompts the user
       const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       micStreamRef.current = micStream;
+      activateConversationAudioSession();
 
       const { clientSecret } = await createRealtimeSession(guideId, artwork.id, language);
 
@@ -377,8 +379,10 @@ export default function ConversationModal({
       // Reuse existing mic stream or request a new one
       let stream = micStreamRef.current;
       if (!stream || !stream.active) {
+        prepareConversationAudioSession();
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         micStreamRef.current = stream;
+        activateConversationAudioSession();
       }
 
       await ensureRecordingGraph(stream);
