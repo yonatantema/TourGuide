@@ -83,6 +83,7 @@ export default function ConversationModal({
 }: ConversationModalProps) {
   const [status, setStatus] = useState<ConversationStatus>("idle");
   const [errorDetail, setErrorDetail] = useState("");
+  const [debugInfo, setDebugInfo] = useState("");
   const [transcriptLog, setTranscriptLog] = useState<{ speaker: "guide" | "visitor"; text: string }[]>([]);
   const [showTranscript, setShowTranscript] = useState(false);
 
@@ -112,6 +113,20 @@ export default function ConversationModal({
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [transcriptLog]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const audioSession = (navigator as NavigatorWithAudioSession).audioSession;
+      const info = [
+        `session: ${audioSession?.type ?? "N/A"}`,
+        `status: ${statusRef.current}`,
+        `playCtx: ${playbackCtxRef.current ? playbackCtxRef.current.state : "none"}`,
+        `recCtx: ${audioContextRef.current ? audioContextRef.current.state : "none"}`,
+      ].join(" | ");
+      setDebugInfo(info);
+    }, 500);
+    return () => clearInterval(interval);
+  }, []);
 
   const setAudioSessionType = useCallback((type: "play-and-record" | "playback" | "auto") => {
     const audioSession = (navigator as NavigatorWithAudioSession).audioSession;
@@ -503,6 +518,8 @@ export default function ConversationModal({
           </h2>
           <p className="text-gray-500 text-sm mt-1">{artwork.artist_name}</p>
         </div>
+
+        {debugInfo && <p className="text-[10px] text-gray-400 text-center break-all">{debugInfo}</p>}
 
         {/* Idle state — Start button */}
         {status === "idle" && (
