@@ -112,20 +112,16 @@ export default function ConversationModal({
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [transcriptLog]);
 
-  const setAudioSessionType = useCallback((type: "play-and-record" | "playback" | "auto") => {
+  const setConversationAudioSession = useCallback(() => {
     const audioSession = (navigator as NavigatorWithAudioSession).audioSession;
     if (!audioSession) return;
 
-    if (!audioSessionManagedRef.current && type !== "auto") {
+    if (!audioSessionManagedRef.current) {
       originalAudioSessionTypeRef.current = audioSession.type ?? null;
       audioSessionManagedRef.current = true;
     }
 
-    audioSession.type = type;
-
-    if (type === "auto") {
-      audioSessionManagedRef.current = false;
-    }
+    audioSession.type = "play-and-record";
   }, []);
 
   const restoreAudioSession = useCallback(() => {
@@ -278,7 +274,7 @@ export default function ConversationModal({
     setStatus("connecting");
 
     try {
-      setAudioSessionType("playback");
+      setConversationAudioSession();
 
       // Request mic access immediately so the browser prompts the user
       const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -312,7 +308,6 @@ export default function ConversationModal({
           const float32 = pcm16ToFloat32(pcm16);
           enqueueAudio(float32);
           if (statusRef.current !== "playing") {
-            setAudioSessionType("playback");
             setStatus("playing");
           }
         }
@@ -342,8 +337,6 @@ export default function ConversationModal({
               clearInterval(checkDrained);
               if (statusRef.current === "playing") {
                 setStatus("ready");
-                setAudioSessionType("auto");
-                stopPlayback();
               }
             }
           }, 100);
@@ -388,7 +381,6 @@ export default function ConversationModal({
         micStreamRef.current = stream;
       }
 
-      setAudioSessionType("play-and-record");
       await ensureRecordingGraph(stream);
 
       audioChunksRef.current = [];
@@ -403,7 +395,6 @@ export default function ConversationModal({
 
   const stopRecording = () => {
     isRecordingRef.current = false;
-    setAudioSessionType("playback");
 
     const ws = wsRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) {
