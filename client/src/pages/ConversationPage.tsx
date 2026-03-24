@@ -468,7 +468,7 @@ export default function ConversationModal({
     setErrorDetail(`Sent ${combined.length} samples, rms=${Math.round(rms)}, ws=${ws.readyState}`);
     setStatus("processing");
 
-    // Delay full teardown of recording graph so iOS exits play-and-record mode
+    // Delay full teardown so iOS exits play-and-record mode and restores full volume
     setTimeout(() => {
       processorRef.current?.disconnect();
       processorRef.current = null;
@@ -481,6 +481,13 @@ export default function ConversationModal({
       audioContextRef.current = null;
       micStreamRef.current?.getTracks().forEach(t => t.stop());
       micStreamRef.current = null;
+      // Also close playback context so it gets recreated at full volume
+      playbackProcessorRef.current?.disconnect();
+      playbackProcessorRef.current = null;
+      playbackCtxRef.current?.close();
+      playbackCtxRef.current = null;
+      playbackBufferRef.current = [];
+      playbackOffsetRef.current = 0;
     }, 500);
   };
 
