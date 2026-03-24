@@ -76,6 +76,7 @@ export default function ConversationModal({
   onClose,
 }: ConversationModalProps) {
   const [status, setStatus] = useState<ConversationStatus>("idle");
+  const [volume, setVolume] = useState(0.6);
   const [transcriptLog, setTranscriptLog] = useState<{ speaker: "guide" | "visitor"; text: string }[]>([]);
   const [showTranscript, setShowTranscript] = useState(false);
 
@@ -90,12 +91,21 @@ export default function ConversationModal({
   const playbackBufferRef = useRef<Float32Array[]>([]);
   const playbackOffsetRef = useRef(0);
   const statusRef = useRef<ConversationStatus>("idle");
+  const volumeRef = useRef(0.6);
   const currentGuideTextRef = useRef("");
   const transcriptEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     statusRef.current = status;
   }, [status]);
+
+  const handleVolumeChange = (val: number) => {
+    setVolume(val);
+    volumeRef.current = val;
+    if (playbackGainRef.current) {
+      playbackGainRef.current.gain.value = val;
+    }
+  };
 
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -156,9 +166,9 @@ export default function ConversationModal({
       }
     };
 
-    // Volume control — reduces max output for Bluetooth speakers
+    // Volume control — adjustable via slider
     const gain = ctx.createGain();
-    gain.gain.value = 0.6;
+    gain.gain.value = volumeRef.current;
     playbackGainRef.current = gain;
 
     // Silent input to keep the processor firing
@@ -499,6 +509,24 @@ export default function ConversationModal({
             >
               Try Again
             </button>
+          </div>
+        )}
+
+        {/* Volume slider */}
+        {showEndButton && status !== "error" && (
+          <div className="flex items-center gap-2 flex-shrink-0 w-full px-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.536 8.464a5 5 0 010 7.072M12 6.253v11.494m0-11.494A4.49 4.49 0 019.652 8H7a2 2 0 00-2 2v4a2 2 0 002 2h2.652a4.49 4.49 0 012.348 1.747m0-11.494A4.49 4.49 0 0114.348 8" />
+            </svg>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={volume}
+              onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+              className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-accent"
+            />
           </div>
         )}
 
