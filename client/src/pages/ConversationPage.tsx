@@ -490,7 +490,7 @@ export default function ConversationModal({
       playbackOffsetRef.current = 0;
       // Signal iOS to switch back to full-volume playback mode
       setAudioSessionType("playback");
-    }, 1500);
+    }, 100);
   };
 
   const handleMicClick = () => {
