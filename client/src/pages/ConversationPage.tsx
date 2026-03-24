@@ -287,7 +287,7 @@ export default function ConversationModal({
       const { clientSecret } = await createRealtimeSession(guideId, artwork.id, language);
 
       const ws = new WebSocket(
-        "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2025-06-03",
+        "wss://api.openai.com/v1/realtime?model=gpt-realtime-2025-08-28",
         [
           "realtime",
           `openai-insecure-api-key.${clientSecret}`,

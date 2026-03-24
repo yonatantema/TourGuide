@@ -75,7 +75,7 @@ ${knowledgeInstruction}
 ${topicRestriction}`;
 
     const session = await openai.beta.realtime.sessions.create({
-      model: "gpt-4o-realtime-preview-2025-06-03",
+      model: "gpt-realtime-2025-08-28" as any,
       voice: guide.voice || "coral",
       modalities: ["text", "audio"],
       instructions,
