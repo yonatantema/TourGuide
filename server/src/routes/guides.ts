@@ -8,7 +8,7 @@ router.get("/", async (req: Request, res: Response) => {
   try {
     const includeHidden = req.query.includeHidden === "true";
     const query = includeHidden
-      ? "SELECT * FROM guides ORDER BY created_at DESC"
+      ? "SELECT * FROM guides ORDER BY hidden ASC, created_at DESC"
       : "SELECT * FROM guides WHERE hidden = false ORDER BY created_at DESC";
     const result = await pool.query(query);
     res.json(result.rows);
