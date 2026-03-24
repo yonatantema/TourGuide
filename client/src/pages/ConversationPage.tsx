@@ -467,6 +467,21 @@ export default function ConversationModal({
     ws.send(JSON.stringify({ type: "response.create" }));
     setErrorDetail(`Sent ${combined.length} samples, rms=${Math.round(rms)}, ws=${ws.readyState}`);
     setStatus("processing");
+
+    // Delay full teardown of recording graph so iOS exits play-and-record mode
+    setTimeout(() => {
+      processorRef.current?.disconnect();
+      processorRef.current = null;
+      micSourceRef.current?.disconnect();
+      micSourceRef.current = null;
+      micMuteGainRef.current?.disconnect();
+      micMuteGainRef.current = null;
+      micGraphStreamRef.current = null;
+      audioContextRef.current?.close();
+      audioContextRef.current = null;
+      micStreamRef.current?.getTracks().forEach(t => t.stop());
+      micStreamRef.current = null;
+    }, 500);
   };
 
   const handleMicClick = () => {
