@@ -4,9 +4,13 @@ import pool from "../db";
 const router = Router();
 
 // GET /api/guides — List all guides
-router.get("/", async (_req: Request, res: Response) => {
+router.get("/", async (req: Request, res: Response) => {
   try {
-    const result = await pool.query("SELECT * FROM guides ORDER BY created_at DESC");
+    const includeHidden = req.query.includeHidden === "true";
+    const query = includeHidden
+      ? "SELECT * FROM guides ORDER BY created_at DESC"
+      : "SELECT * FROM guides WHERE hidden = false ORDER BY created_at DESC";
+    const result = await pool.query(query);
     res.json(result.rows);
   } catch (err) {
     console.error(err);
@@ -32,10 +36,10 @@ router.get("/:id", async (req: Request, res: Response) => {
 // POST /api/guides — Create guide
 router.post("/", async (req: Request, res: Response) => {
   try {
-    const { name, description, personality, response_guidelines, voice, knowledge, icon } = req.body;
+    const { name, description, personality, response_guidelines, voice, knowledge, icon, hidden } = req.body;
     const result = await pool.query(
-      "INSERT INTO guides (name, description, personality, response_guidelines, voice, knowledge, icon) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",
-      [name, description, personality, response_guidelines, voice || "coral", knowledge || "internal", icon || "art-expert"]
+      "INSERT INTO guides (name, description, personality, response_guidelines, voice, knowledge, icon, hidden) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
+      [name, description, personality, response_guidelines, voice || "coral", knowledge || "internal", icon || "art-expert", hidden || false]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -48,7 +52,7 @@ router.post("/", async (req: Request, res: Response) => {
 router.put("/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, description, personality, response_guidelines, voice, knowledge, icon } = req.body;
+    const { name, description, personality, response_guidelines, voice, knowledge, icon, hidden } = req.body;
 
     const existing = await pool.query("SELECT * FROM guides WHERE id = $1", [id]);
     if (existing.rows.length === 0) {
@@ -56,8 +60,8 @@ router.put("/:id", async (req: Request, res: Response) => {
     }
 
     const result = await pool.query(
-      "UPDATE guides SET name = $1, description = $2, personality = $3, response_guidelines = $4, voice = $5, knowledge = $6, icon = $7 WHERE id = $8 RETURNING *",
-      [name, description, personality, response_guidelines, voice || "coral", knowledge || "internal", icon || "art-expert", id]
+      "UPDATE guides SET name = $1, description = $2, personality = $3, response_guidelines = $4, voice = $5, knowledge = $6, icon = $7, hidden = $8 WHERE id = $9 RETURNING *",
+      [name, description, personality, response_guidelines, voice || "coral", knowledge || "internal", icon || "art-expert", hidden || false, id]
     );
     res.json(result.rows[0]);
   } catch (err) {
