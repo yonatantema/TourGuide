@@ -76,6 +76,7 @@ export default function ConversationModal({
   onClose,
 }: ConversationModalProps) {
   const [status, setStatus] = useState<ConversationStatus>("idle");
+  const [volume, setVolume] = useState(0.6);
   const [transcriptLog, setTranscriptLog] = useState<{ speaker: "guide" | "visitor"; text: string }[]>([]);
   const [showTranscript, setShowTranscript] = useState(false);
 
@@ -84,35 +85,49 @@ export default function ConversationModal({
   const processorRef = useRef<ScriptProcessorNode | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
   const audioChunksRef = useRef<Int16Array[]>([]);
+  const playbackCtxRef = useRef<AudioContext | null>(null);
+  const playbackProcessorRef = useRef<ScriptProcessorNode | null>(null);
+  const playbackGainRef = useRef<GainNode | null>(null);
+  const playbackBufferRef = useRef<Float32Array[]>([]);
+  const playbackOffsetRef = useRef(0);
   const statusRef = useRef<ConversationStatus>("idle");
+  const volumeRef = useRef(0.6);
   const currentGuideTextRef = useRef("");
   const transcriptEndRef = useRef<HTMLDivElement>(null);
-  const isRecordingRef = useRef(false);
-  const playbackScheduleTimeRef = useRef(0);
-  const playbackGainRef = useRef<GainNode | null>(null);
 
   useEffect(() => {
     statusRef.current = status;
   }, [status]);
 
+  const handleVolumeChange = (val: number) => {
+    setVolume(val);
+    volumeRef.current = val;
+    if (playbackGainRef.current) {
+      playbackGainRef.current.gain.value = val;
+    }
+  };
+
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [transcriptLog]);
-
 
   const cleanup = useCallback(() => {
     wsRef.current?.close();
     wsRef.current = null;
     micStreamRef.current?.getTracks().forEach((t) => t.stop());
     micStreamRef.current = null;
-    isRecordingRef.current = false;
     processorRef.current?.disconnect();
     processorRef.current = null;
-    playbackGainRef.current?.disconnect();
-    playbackGainRef.current = null;
     audioContextRef.current?.close();
     audioContextRef.current = null;
-    playbackScheduleTimeRef.current = 0;
+    playbackProcessorRef.current?.disconnect();
+    playbackProcessorRef.current = null;
+    playbackGainRef.current?.disconnect();
+    playbackGainRef.current = null;
+    playbackCtxRef.current?.close();
+    playbackCtxRef.current = null;
+    playbackBufferRef.current = [];
+    playbackOffsetRef.current = 0;
     audioChunksRef.current = [];
   }, []);
 
@@ -120,63 +135,79 @@ export default function ConversationModal({
     return cleanup;
   }, [cleanup]);
 
-  // Playback: schedule AudioBufferSource nodes for gapless playback
+  const ensurePlaybackStream = () => {
+    if (playbackCtxRef.current) return;
+    const ctx = new AudioContext({ sampleRate: 24000 });
+    playbackCtxRef.current = ctx;
+    const processor = ctx.createScriptProcessor(2048, 1, 1);
+    playbackProcessorRef.current = processor;
+
+    processor.onaudioprocess = (e) => {
+      const output = e.outputBuffer.getChannelData(0);
+      let written = 0;
+      while (written < output.length && playbackBufferRef.current.length > 0) {
+        const chunk = playbackBufferRef.current[0];
+        const offset = playbackOffsetRef.current;
+        const remaining = chunk.length - offset;
+        const needed = output.length - written;
+        if (remaining <= needed) {
+          output.set(chunk.subarray(offset), written);
+          written += remaining;
+          playbackBufferRef.current.shift();
+          playbackOffsetRef.current = 0;
+        } else {
+          output.set(chunk.subarray(offset, offset + needed), written);
+          written += needed;
+          playbackOffsetRef.current = offset + needed;
+        }
+      }
+      for (let i = written; i < output.length; i++) {
+        output[i] = 0;
+      }
+    };
+
+    // Volume control — adjustable via slider
+    const gain = ctx.createGain();
+    gain.gain.value = volumeRef.current;
+    playbackGainRef.current = gain;
+
+    // Silent input to keep the processor firing
+    const silent = ctx.createConstantSource();
+    silent.offset.value = 0;
+    silent.connect(processor);
+    processor.connect(gain);
+    gain.connect(ctx.destination);
+    silent.start();
+  };
+
   const enqueueAudio = (float32: Float32Array) => {
-    const ctx = audioContextRef.current;
-    if (!ctx) return;
-    // Create AudioBuffer at 24kHz — iOS resamples to native rate internally
-    const audioBuffer = ctx.createBuffer(1, float32.length, 24000);
-    audioBuffer.getChannelData(0).set(float32);
-    const source = ctx.createBufferSource();
-    source.buffer = audioBuffer;
-    source.connect(playbackGainRef.current || ctx.destination);
-    // Schedule gapless playback
-    const now = ctx.currentTime;
-    const startTime = Math.max(now, playbackScheduleTimeRef.current);
-    source.start(startTime);
-    playbackScheduleTimeRef.current = startTime + audioBuffer.duration;
+    ensurePlaybackStream();
+    playbackBufferRef.current.push(float32);
   };
 
   const stopPlayback = () => {
-    playbackScheduleTimeRef.current = 0;
-    // Disconnect old gain node to instantly silence all playing sources
+    playbackProcessorRef.current?.disconnect();
+    playbackProcessorRef.current = null;
     playbackGainRef.current?.disconnect();
-    const ctx = audioContextRef.current;
-    if (ctx) {
-      const gain = ctx.createGain();
-      gain.connect(ctx.destination);
-      playbackGainRef.current = gain;
-    }
+    playbackGainRef.current = null;
+    playbackCtxRef.current?.close();
+    playbackCtxRef.current = null;
+    playbackBufferRef.current = [];
+    playbackOffsetRef.current = 0;
   };
 
   const handleStartConversation = async () => {
     setStatus("connecting");
 
     try {
-      // Get mic permission early (temp stream, immediately stopped)
-      const tempStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      tempStream.getTracks().forEach(t => t.stop());
-
-      // Create single shared AudioContext at native sample rate
-      const ctx = new AudioContext({ latencyHint: "interactive" } as any);
-      audioContextRef.current = ctx;
-
-      // Create shared gain node for playback (enables instant stop on interrupt)
-      const gain = ctx.createGain();
-      gain.connect(ctx.destination);
-      playbackGainRef.current = gain;
-
-      // Play silent buffer to unlock iOS audio
-      const silentBuffer = ctx.createBuffer(1, 1, ctx.sampleRate);
-      const silentSource = ctx.createBufferSource();
-      silentSource.buffer = silentBuffer;
-      silentSource.connect(ctx.destination);
-      silentSource.start();
+      // Request mic access immediately so the browser prompts the user
+      const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      micStreamRef.current = micStream;
 
       const { clientSecret } = await createRealtimeSession(guideId, artwork.id, language);
 
       const ws = new WebSocket(
-        "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2025-06-03",
+        "wss://api.openai.com/v1/realtime?model=gpt-realtime-2025-08-28",
         [
           "realtime",
           `openai-insecure-api-key.${clientSecret}`,
@@ -224,48 +255,42 @@ export default function ConversationModal({
         if (data.type === "response.audio.done") {
           // Only transition to ready if still in playing state
           if (statusRef.current !== "playing") return;
-          // Wait for scheduled playback to finish
-          const ctx = audioContextRef.current;
-          if (!ctx) return;
-          const waitTime = Math.max(0, (playbackScheduleTimeRef.current - ctx.currentTime) * 1000);
-          setTimeout(() => {
-            if (statusRef.current === "playing") {
-              setStatus("ready");
+          // Wait for the playback buffer to drain before transitioning
+          const checkDrained = setInterval(() => {
+            if (playbackBufferRef.current.length === 0) {
+              clearInterval(checkDrained);
+              if (statusRef.current === "playing") {
+                setStatus("ready");
+              }
             }
-          }, waitTime + 100);
+          }, 100);
         }
 
         if (data.type === "error") {
           console.error("Realtime API error:", data.error);
-          // Ignore cancel errors (harmless, from response.cancel when no active response)
-          if (data.error?.code === "response_cancel_not_active") return;
           // Ignore errors while recording — likely from response.cancel
           if (statusRef.current !== "recording") {
-
             setStatus("error");
           }
         }
       };
 
-      ws.onerror = (e) => {
-
+      ws.onerror = () => {
         setStatus("error");
       };
 
-      ws.onclose = (e) => {
+      ws.onclose = () => {
         if (
           statusRef.current !== "idle" &&
           statusRef.current !== "error"
         ) {
-
           setStatus("error");
         }
       };
 
       wsRef.current = ws;
-    } catch (err: any) {
+    } catch (err) {
       console.error("Failed to start conversation:", err);
-
       setStatus("error");
     }
   };
@@ -279,20 +304,16 @@ export default function ConversationModal({
         micStreamRef.current = stream;
       }
 
-      const ctx = audioContextRef.current!;
-      if (ctx.state === "suspended") await ctx.resume();
-
-      // Disconnect old recording nodes if any
-      processorRef.current?.disconnect();
-
+      const ctx = new AudioContext();
+      audioContextRef.current = ctx;
       const source = ctx.createMediaStreamSource(stream);
       const processor = ctx.createScriptProcessor(4096, 1, 1);
       processorRef.current = processor;
-      const muteGain = ctx.createGain();
-      muteGain.gain.value = 0;
+
+      audioChunksRef.current = [];
+      currentGuideTextRef.current = "";
 
       processor.onaudioprocess = (e) => {
-        if (!isRecordingRef.current) return;
         const inputData = e.inputBuffer.getChannelData(0);
         const resampled = resampleTo24kHz(inputData, ctx.sampleRate);
         const pcm16 = float32ToPcm16(resampled);
@@ -300,12 +321,7 @@ export default function ConversationModal({
       };
 
       source.connect(processor);
-      processor.connect(muteGain);
-      muteGain.connect(ctx.destination);
-
-      audioChunksRef.current = [];
-      currentGuideTextRef.current = "";
-      isRecordingRef.current = true;
+      processor.connect(ctx.destination);
       setStatus("recording");
     } catch (err) {
       console.error("Microphone access failed:", err);
@@ -314,9 +330,11 @@ export default function ConversationModal({
   };
 
   const stopRecording = () => {
-    isRecordingRef.current = false;
     processorRef.current?.disconnect();
     processorRef.current = null;
+    // Keep mic stream alive for reuse — only close AudioContext
+    audioContextRef.current?.close();
+    audioContextRef.current = null;
 
     const ws = wsRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) {
@@ -373,14 +391,12 @@ export default function ConversationModal({
     if (status === "recording") {
       stopRecording();
     } else if (status === "ready" || status === "playing" || status === "processing") {
-      // Only cancel if AI is actively responding
-      if (status === "playing" || status === "processing") {
-        const ws = wsRef.current;
-        if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ type: "response.cancel" }));
-        }
-        stopPlayback();
+      // Interrupt AI: cancel server response, stop playback, start recording
+      const ws = wsRef.current;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "response.cancel" }));
       }
+      stopPlayback();
       startRecording();
     }
   };
@@ -493,6 +509,24 @@ export default function ConversationModal({
             >
               Try Again
             </button>
+          </div>
+        )}
+
+        {/* Volume slider */}
+        {showEndButton && status !== "error" && (
+          <div className="flex items-center gap-2 flex-shrink-0 w-full px-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.536 8.464a5 5 0 010 7.072M12 6.253v11.494m0-11.494A4.49 4.49 0 019.652 8H7a2 2 0 00-2 2v4a2 2 0 002 2h2.652a4.49 4.49 0 012.348 1.747m0-11.494A4.49 4.49 0 0114.348 8" />
+            </svg>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={volume}
+              onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+              className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-accent"
+            />
           </div>
         )}
 
