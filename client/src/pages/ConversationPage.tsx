@@ -75,13 +75,6 @@ type NavigatorWithAudioSession = Navigator & {
   };
 };
 
-const MIC_AUDIO_CONSTRAINTS: MediaTrackConstraints = {
-  channelCount: 1,
-  echoCancellation: false,
-  noiseSuppression: false,
-  autoGainControl: false,
-};
-
 export default function ConversationModal({
   artwork,
   guideId,
@@ -221,10 +214,8 @@ export default function ConversationModal({
     try {
       setConversationAudioSession();
 
-      // Avoid Safari's default voice-processing path when opening the mic.
-      const micStream = await navigator.mediaDevices.getUserMedia({
-        audio: MIC_AUDIO_CONSTRAINTS,
-      });
+      // Request mic access immediately so the browser prompts the user
+      const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       micStreamRef.current = micStream;
 
       const { clientSecret } = await createRealtimeSession(guideId, artwork.id, language);
@@ -324,9 +315,7 @@ export default function ConversationModal({
       // Reuse existing mic stream or request a new one
       let stream = micStreamRef.current;
       if (!stream || !stream.active) {
-        stream = await navigator.mediaDevices.getUserMedia({
-          audio: MIC_AUDIO_CONSTRAINTS,
-        });
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         micStreamRef.current = stream;
       }
 
