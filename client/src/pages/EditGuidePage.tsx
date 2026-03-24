@@ -13,6 +13,7 @@ export default function EditGuidePage() {
   const [voice, setVoice] = useState("coral");
   const [knowledge, setKnowledge] = useState("internal");
   const [icon, setIcon] = useState(DEFAULT_ICON);
+  const [hidden, setHidden] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -27,6 +28,7 @@ export default function EditGuidePage() {
         setVoice(guide.voice || "coral");
         setKnowledge(guide.knowledge || "internal");
         setIcon(guide.icon || DEFAULT_ICON);
+        setHidden(guide.hidden || false);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -45,6 +47,7 @@ export default function EditGuidePage() {
         voice,
         knowledge,
         icon,
+        hidden,
       });
       navigate(`/guidelines/${id}`);
     } catch (err) {
@@ -157,6 +160,18 @@ export default function EditGuidePage() {
               </button>
             ))}
           </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <input
+            type="checkbox"
+            id="hidden"
+            checked={hidden}
+            onChange={(e) => setHidden(e.target.checked)}
+            className="w-4 h-4 accent-accent"
+          />
+          <label htmlFor="hidden" className="text-sm font-medium text-gray-700">
+            Hidden — Hide this guide from visitors while polishing
+          </label>
         </div>
         <button
           type="submit"

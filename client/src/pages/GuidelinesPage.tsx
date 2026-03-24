@@ -7,7 +7,7 @@ export default function GuidelinesPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getAllGuides()
+    getAllGuides(true)
       .then(setGuides)
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -48,7 +48,12 @@ export default function GuidelinesPage() {
               to={`/guidelines/${guide.id}`}
               className="bg-cream rounded-xl border-2 border-gray-300 overflow-hidden hover:shadow-lg transition-shadow p-5"
             >
-              <h3 className="font-semibold text-gray-900 text-sm mb-2">{guide.name}</h3>
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="font-semibold text-gray-900 text-sm">{guide.name}</h3>
+                {guide.hidden && (
+                  <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded">Hidden</span>
+                )}
+              </div>
               <p className="text-xs text-gray-500 line-clamp-3">{guide.description}</p>
             </Link>
           ))}

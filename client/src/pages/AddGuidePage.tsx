@@ -12,6 +12,7 @@ export default function AddGuidePage() {
   const [voice, setVoice] = useState("coral");
   const [knowledge, setKnowledge] = useState("internal");
   const [icon, setIcon] = useState(DEFAULT_ICON);
+  const [hidden, setHidden] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -26,6 +27,7 @@ export default function AddGuidePage() {
         voice,
         knowledge,
         icon,
+        hidden,
       });
       navigate(`/guidelines/${guide.id}`);
     } catch (err) {
@@ -134,6 +136,18 @@ export default function AddGuidePage() {
               </button>
             ))}
           </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <input
+            type="checkbox"
+            id="hidden"
+            checked={hidden}
+            onChange={(e) => setHidden(e.target.checked)}
+            className="w-4 h-4 accent-accent"
+          />
+          <label htmlFor="hidden" className="text-sm font-medium text-gray-700">
+            Hidden — Hide this guide from visitors while polishing
+          </label>
         </div>
         <button
           type="submit"

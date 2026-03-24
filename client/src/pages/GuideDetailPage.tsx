@@ -93,9 +93,14 @@ export default function GuideDetailPage() {
           <p className="text-gray-600 capitalize">{guide.voice || "coral"}</p>
         </div>
 
-        <div>
+        <div className="mb-6">
           <h2 className="font-serif text-xl font-semibold text-gray-900 mb-1">Knowledge Source</h2>
           <p className="text-gray-600 capitalize">{guide.knowledge || "internal"}</p>
+        </div>
+
+        <div>
+          <h2 className="font-serif text-xl font-semibold text-gray-900 mb-1">Visibility</h2>
+          <p className="text-gray-600">{guide.hidden ? "Hidden from visitors" : "Visible to visitors"}</p>
         </div>
       </div>
     </div>
