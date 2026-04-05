@@ -111,6 +111,17 @@ export default function ConversationModal({
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [transcriptLog]);
 
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        playbackCtxRef.current?.resume();
+        audioContextRef.current?.resume();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, []);
+
   const cleanup = useCallback(() => {
     wsRef.current?.close();
     wsRef.current = null;
@@ -136,7 +147,12 @@ export default function ConversationModal({
   }, [cleanup]);
 
   const ensurePlaybackStream = () => {
-    if (playbackCtxRef.current) return;
+    if (playbackCtxRef.current) {
+      if (playbackCtxRef.current.state === "suspended") {
+        playbackCtxRef.current.resume();
+      }
+      return;
+    }
     const ctx = new AudioContext({ sampleRate: 24000 });
     playbackCtxRef.current = ctx;
     const processor = ctx.createScriptProcessor(2048, 1, 1);
@@ -182,6 +198,9 @@ export default function ConversationModal({
 
   const enqueueAudio = (float32: Float32Array) => {
     ensurePlaybackStream();
+    if (playbackCtxRef.current?.state === "suspended") {
+      playbackCtxRef.current.resume();
+    }
     playbackBufferRef.current.push(float32);
   };
 
@@ -306,6 +325,7 @@ export default function ConversationModal({
 
       const ctx = new AudioContext();
       audioContextRef.current = ctx;
+      if (ctx.state === "suspended") await ctx.resume();
       const source = ctx.createMediaStreamSource(stream);
       const processor = ctx.createScriptProcessor(4096, 1, 1);
       processorRef.current = processor;
