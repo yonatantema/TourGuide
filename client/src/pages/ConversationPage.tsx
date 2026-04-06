@@ -85,6 +85,8 @@ export default function ConversationModal({
   const processorRef = useRef<ScriptProcessorNode | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
   const audioChunksRef = useRef<Int16Array[]>([]);
+  const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const silentChunksRef = useRef(0);
   const playbackCtxRef = useRef<AudioContext | null>(null);
   const playbackProcessorRef = useRef<ScriptProcessorNode | null>(null);
   const playbackGainRef = useRef<GainNode | null>(null);
@@ -122,11 +124,42 @@ export default function ConversationModal({
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, []);
 
+  const reacquireMic = useCallback(async () => {
+    try {
+      const newStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      micStreamRef.current?.getTracks().forEach((t) => t.stop());
+      micStreamRef.current = newStream;
+      // If mid-recording, reconnect source to existing processor
+      if (audioContextRef.current && processorRef.current) {
+        sourceRef.current?.disconnect();
+        const newSource = audioContextRef.current.createMediaStreamSource(newStream);
+        newSource.connect(processorRef.current);
+        sourceRef.current = newSource;
+      }
+      silentChunksRef.current = 0;
+    } catch (err) {
+      console.error("Failed to re-acquire microphone:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleDeviceChange = () => {
+      // Only re-acquire if we have an active conversation
+      if (micStreamRef.current) {
+        reacquireMic();
+      }
+    };
+    navigator.mediaDevices.addEventListener("devicechange", handleDeviceChange);
+    return () => navigator.mediaDevices.removeEventListener("devicechange", handleDeviceChange);
+  }, [reacquireMic]);
+
   const cleanup = useCallback(() => {
     wsRef.current?.close();
     wsRef.current = null;
     micStreamRef.current?.getTracks().forEach((t) => t.stop());
     micStreamRef.current = null;
+    sourceRef.current?.disconnect();
+    sourceRef.current = null;
     processorRef.current?.disconnect();
     processorRef.current = null;
     audioContextRef.current?.close();
@@ -327,14 +360,26 @@ export default function ConversationModal({
       audioContextRef.current = ctx;
       if (ctx.state === "suspended") await ctx.resume();
       const source = ctx.createMediaStreamSource(stream);
+      sourceRef.current = source;
       const processor = ctx.createScriptProcessor(4096, 1, 1);
       processorRef.current = processor;
 
       audioChunksRef.current = [];
       currentGuideTextRef.current = "";
+      silentChunksRef.current = 0;
 
       processor.onaudioprocess = (e) => {
         const inputData = e.inputBuffer.getChannelData(0);
+        // Silence detection — re-acquire mic after ~1-2s of silence (Safari fallback)
+        const energy = inputData.reduce((sum, s) => sum + Math.abs(s), 0);
+        if (energy < 0.001) {
+          silentChunksRef.current++;
+          if (silentChunksRef.current > 20) {
+            reacquireMic();
+          }
+        } else {
+          silentChunksRef.current = 0;
+        }
         const resampled = resampleTo24kHz(inputData, ctx.sampleRate);
         const pcm16 = float32ToPcm16(resampled);
         audioChunksRef.current.push(pcm16);
@@ -350,6 +395,8 @@ export default function ConversationModal({
   };
 
   const stopRecording = () => {
+    sourceRef.current?.disconnect();
+    sourceRef.current = null;
     processorRef.current?.disconnect();
     processorRef.current = null;
     // Keep mic stream alive for reuse — only close AudioContext
