@@ -1,4 +1,9 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
+import LoginPage from "./pages/LoginPage";
+import AuthCallbackPage from "./pages/AuthCallbackPage";
+import SetupPage from "./pages/SetupPage";
 import HomePage from "./pages/HomePage";
 import AdminPage from "./pages/AdminPage";
 import GalleryPage from "./pages/GalleryPage";
@@ -16,21 +21,31 @@ import PublicArtworkPage from "./pages/PublicArtworkPage";
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/admin" element={<AdminPage />} />
-        <Route path="/gallery" element={<GalleryPage />} />
-        <Route path="/gallery/add" element={<AddArtworkPage />} />
-        <Route path="/gallery/:id" element={<ArtworkDetailPage />} />
-        <Route path="/gallery/:id/edit" element={<EditArtworkPage />} />
-        <Route path="/guides" element={<ChooseGuidePage />} />
-        <Route path="/guides/:id" element={<GuideTourPage />} />
-        <Route path="/artwork/:id" element={<PublicArtworkPage />} />
-        <Route path="/guidelines" element={<GuidelinesPage />} />
-        <Route path="/guidelines/add" element={<AddGuidePage />} />
-        <Route path="/guidelines/:id" element={<GuideDetailPage />} />
-        <Route path="/guidelines/:id/edit" element={<EditGuidePage />} />
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/auth/callback" element={<AuthCallbackPage />} />
+
+          {/* Setup (authenticated but no org yet) */}
+          <Route path="/setup" element={<SetupPage />} />
+
+          {/* Protected routes */}
+          <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+          <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
+          <Route path="/gallery" element={<ProtectedRoute><GalleryPage /></ProtectedRoute>} />
+          <Route path="/gallery/add" element={<ProtectedRoute><AddArtworkPage /></ProtectedRoute>} />
+          <Route path="/gallery/:id" element={<ProtectedRoute><ArtworkDetailPage /></ProtectedRoute>} />
+          <Route path="/gallery/:id/edit" element={<ProtectedRoute><EditArtworkPage /></ProtectedRoute>} />
+          <Route path="/guides" element={<ProtectedRoute><ChooseGuidePage /></ProtectedRoute>} />
+          <Route path="/guides/:id" element={<ProtectedRoute><GuideTourPage /></ProtectedRoute>} />
+          <Route path="/artwork/:id" element={<ProtectedRoute><PublicArtworkPage /></ProtectedRoute>} />
+          <Route path="/guidelines" element={<ProtectedRoute><GuidelinesPage /></ProtectedRoute>} />
+          <Route path="/guidelines/add" element={<ProtectedRoute><AddGuidePage /></ProtectedRoute>} />
+          <Route path="/guidelines/:id" element={<ProtectedRoute><GuideDetailPage /></ProtectedRoute>} />
+          <Route path="/guidelines/:id/edit" element={<ProtectedRoute><EditGuidePage /></ProtectedRoute>} />
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

@@ -41,9 +41,10 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "image is required" });
     }
 
-    // Fetch all artworks from DB
+    // Fetch all artworks from DB (scoped to user's org)
     const artworksResult = await pool.query(
-      "SELECT id, artwork_name, artist_name FROM artworks ORDER BY id"
+      "SELECT id, artwork_name, artist_name FROM artworks WHERE org_id = $1 ORDER BY id",
+      [req.orgId]
     );
     const artworks = artworksResult.rows;
 

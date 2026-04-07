@@ -1,4 +1,5 @@
-const API_URL = import.meta.env.VITE_API_URL || "";
+import { apiFetch, API_URL } from "./api";
+
 const API_BASE = `${API_URL}/api/artworks`;
 export const UPLOADS_URL = `${API_URL}/uploads`;
 
@@ -13,19 +14,19 @@ export interface Artwork {
 }
 
 export async function getAllArtworks(): Promise<Artwork[]> {
-  const res = await fetch(API_BASE);
+  const res = await apiFetch(API_BASE);
   if (!res.ok) throw new Error("Failed to fetch artworks");
   return res.json();
 }
 
 export async function getArtwork(id: number): Promise<Artwork> {
-  const res = await fetch(`${API_BASE}/${id}`);
+  const res = await apiFetch(`${API_BASE}/${id}`);
   if (!res.ok) throw new Error("Failed to fetch artwork");
   return res.json();
 }
 
 export async function createArtwork(formData: FormData): Promise<Artwork> {
-  const res = await fetch(API_BASE, {
+  const res = await apiFetch(API_BASE, {
     method: "POST",
     body: formData,
   });
@@ -34,7 +35,7 @@ export async function createArtwork(formData: FormData): Promise<Artwork> {
 }
 
 export async function updateArtwork(id: number, formData: FormData): Promise<Artwork> {
-  const res = await fetch(`${API_BASE}/${id}`, {
+  const res = await apiFetch(`${API_BASE}/${id}`, {
     method: "PUT",
     body: formData,
   });
@@ -43,7 +44,7 @@ export async function updateArtwork(id: number, formData: FormData): Promise<Art
 }
 
 export async function deleteArtwork(id: number): Promise<void> {
-  const res = await fetch(`${API_BASE}/${id}`, {
+  const res = await apiFetch(`${API_BASE}/${id}`, {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Failed to delete artwork");
@@ -55,7 +56,7 @@ export interface RecognizeResult {
 }
 
 export async function recognizeArtwork(imageDataUrl: string): Promise<RecognizeResult> {
-  const res = await fetch(`${API_URL}/api/recognize`, {
+  const res = await apiFetch(`${API_URL}/api/recognize`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ image: imageDataUrl }),

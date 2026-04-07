@@ -8,7 +8,8 @@ const uploadsDir = path.join(__dirname, "../../uploads");
 
 export async function analyzeArtworkImage(
   imageFilename: string,
-  artworkId: number
+  artworkId: number,
+  orgId: string
 ): Promise<string | null> {
   try {
     const imagePath = path.join(uploadsDir, imageFilename);
@@ -60,8 +61,8 @@ Be thorough and objective. Describe what you see, not interpretations. This desc
     if (!analysis) return null;
 
     await pool.query(
-      "UPDATE artworks SET visual_analysis = $1 WHERE id = $2",
-      [analysis, artworkId]
+      "UPDATE artworks SET visual_analysis = $1 WHERE id = $2 AND org_id = $3",
+      [analysis, artworkId, orgId]
     );
 
     return analysis;

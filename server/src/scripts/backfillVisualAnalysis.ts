@@ -6,18 +6,18 @@ async function backfill() {
 
   const { rows: artworks } = targetId
     ? await pool.query(
-        "SELECT id, artwork_name, image_filename FROM artworks WHERE id = $1",
+        "SELECT id, artwork_name, image_filename, org_id FROM artworks WHERE id = $1",
         [targetId]
       )
     : await pool.query(
-        "SELECT id, artwork_name, image_filename FROM artworks WHERE visual_analysis IS NULL"
+        "SELECT id, artwork_name, image_filename, org_id FROM artworks WHERE visual_analysis IS NULL"
       );
 
   console.log(`Found ${artworks.length} artwork(s) to analyze.`);
 
   for (const artwork of artworks) {
     console.log(`Analyzing: ${artwork.artwork_name} (id=${artwork.id})...`);
-    const result = await analyzeArtworkImage(artwork.image_filename, artwork.id);
+    const result = await analyzeArtworkImage(artwork.image_filename, artwork.id, artwork.org_id);
     if (result) {
       console.log(`  Done.`);
     } else {

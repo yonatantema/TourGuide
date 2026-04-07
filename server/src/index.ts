@@ -1,9 +1,12 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import path from "path";
 import fs from "fs";
 import pool from "./db";
+import { requireAuth } from "./middleware/auth";
+import authRoutes from "./routes/auth";
 import artworkRoutes from "./routes/artworks";
 import guideRoutes from "./routes/guides";
 import recognizeRoutes from "./routes/recognize";
@@ -19,17 +22,26 @@ if (!fs.existsSync(uploadsDir)) {
 }
 
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    credentials: true,
+  })
+);
+app.use(cookieParser());
 app.use(express.json({ limit: "10mb" }));
 
 // Serve uploaded images statically
 app.use("/uploads", express.static(uploadsDir));
 
-// API routes
-app.use("/api/artworks", artworkRoutes);
-app.use("/api/guides", guideRoutes);
-app.use("/api/recognize", recognizeRoutes);
-app.use("/api/conversation", conversationRoutes);
+// Public routes (no auth)
+app.use("/api/auth", authRoutes);
+
+// Protected routes
+app.use("/api/artworks", requireAuth, artworkRoutes);
+app.use("/api/guides", requireAuth, guideRoutes);
+app.use("/api/recognize", requireAuth, recognizeRoutes);
+app.use("/api/conversation", requireAuth, conversationRoutes);
 
 // Initialize database table and start server
 const initSQL = fs.readFileSync(path.join(__dirname, "db/init.sql"), "utf-8");

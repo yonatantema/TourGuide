@@ -15,8 +15,8 @@ router.post("/session", async (req, res) => {
     }
 
     const [guideResult, artworkResult] = await Promise.all([
-      pool.query("SELECT * FROM guides WHERE id = $1", [guideId]),
-      pool.query("SELECT * FROM artworks WHERE id = $1", [artworkId]),
+      pool.query("SELECT * FROM guides WHERE id = $1 AND org_id = $2", [guideId, req.orgId]),
+      pool.query("SELECT * FROM artworks WHERE id = $1 AND org_id = $2", [artworkId, req.orgId]),
     ]);
 
     const guide = guideResult.rows[0];
