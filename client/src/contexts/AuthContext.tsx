@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
+import { API_URL, getToken, clearToken } from "../services/api";
 
 interface User {
   id: string;
@@ -24,8 +25,6 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | null>(null);
 
-const API_URL = import.meta.env.VITE_API_URL || "";
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [org, setOrg] = useState<Org | null>(null);
@@ -33,11 +32,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const checkAuth = useCallback(async () => {
+    const token = getToken();
+    if (!token) {
+      setUser(null);
+      setOrg(null);
+      setNeedsSetup(false);
+      setLoading(false);
+      return;
+    }
     try {
       const res = await fetch(`${API_URL}/api/auth/me`, {
-        credentials: "include",
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
+        clearToken();
         setUser(null);
         setOrg(null);
         setNeedsSetup(false);
@@ -61,10 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [checkAuth]);
 
   const logout = useCallback(async () => {
-    await fetch(`${API_URL}/api/auth/logout`, {
-      method: "POST",
-      credentials: "include",
-    });
+    clearToken();
     setUser(null);
     setOrg(null);
     setNeedsSetup(false);

@@ -12,13 +12,11 @@ const oauth2Client = new OAuth2Client(
   process.env.GOOGLE_REDIRECT_URI
 );
 
-const COOKIE_OPTIONS = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: (process.env.NODE_ENV === "production" ? "none" : "lax") as "none" | "lax",
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-  path: "/",
-};
+function getTokenFromHeader(req: Request): string | null {
+  const auth = req.headers.authorization;
+  if (auth?.startsWith("Bearer ")) return auth.slice(7);
+  return null;
+}
 
 function signToken(user: { id: string; email: string; name: string }): string {
   return jwt.sign(
@@ -79,8 +77,8 @@ router.post("/google/callback", async (req: Request, res: Response) => {
     const needsSetup = orgResult.rows.length === 0;
 
     const token = signToken({ id: user.id, email: user.email, name: user.name });
-    res.cookie("token", token, COOKIE_OPTIONS);
     res.json({
+      token,
       user: { id: user.id, email: user.email, name: user.name, picture: user.picture },
       needsSetup,
     });
@@ -92,7 +90,7 @@ router.post("/google/callback", async (req: Request, res: Response) => {
 
 // GET /api/auth/me — return current user info
 router.get("/me", async (req: Request, res: Response) => {
-  const token = req.cookies?.token;
+  const token = getTokenFromHeader(req);
   if (!token) {
     return res.status(401).json({ error: "Not authenticated" });
   }
@@ -131,7 +129,7 @@ router.get("/me", async (req: Request, res: Response) => {
 
 // POST /api/auth/setup — create personal org for new user
 router.post("/setup", async (req: Request, res: Response) => {
-  const token = req.cookies?.token;
+  const token = getTokenFromHeader(req);
   if (!token) {
     return res.status(401).json({ error: "Not authenticated" });
   }
@@ -179,9 +177,8 @@ router.post("/setup", async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/auth/logout — clear the cookie
+// POST /api/auth/logout — no server-side state to clear, client removes token
 router.post("/logout", (_req: Request, res: Response) => {
-  res.clearCookie("token", { path: "/" });
   res.json({ message: "Logged out" });
 });
 

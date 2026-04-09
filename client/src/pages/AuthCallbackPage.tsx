@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-
-const API_URL = import.meta.env.VITE_API_URL || "";
+import { API_URL, setToken } from "../services/api";
 
 export default function AuthCallbackPage() {
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +21,6 @@ export default function AuthCallbackPage() {
         const res = await fetch(`${API_URL}/api/auth/google/callback`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          credentials: "include",
           body: JSON.stringify({ code }),
         });
 
@@ -33,6 +31,7 @@ export default function AuthCallbackPage() {
         }
 
         const data = await res.json();
+        setToken(data.token);
         await refreshAuth();
 
         if (data.needsSetup) {

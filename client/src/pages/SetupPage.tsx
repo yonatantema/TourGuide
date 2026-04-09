@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-
-const API_URL = import.meta.env.VITE_API_URL || "";
+import { API_URL, getToken } from "../services/api";
 
 export default function SetupPage() {
   const { user, refreshAuth } = useAuth();
@@ -17,8 +16,10 @@ export default function SetupPage() {
     try {
       const res = await fetch(`${API_URL}/api/auth/setup`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getToken()}`,
+        },
         body: JSON.stringify({
           orgName: orgName.trim() || `${user?.name}'s Museum`,
           seed,
