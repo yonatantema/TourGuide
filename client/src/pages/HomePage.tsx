@@ -1,8 +1,23 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function HomePage() {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
   return (
     <div className="h-[100dvh] flex flex-col items-center justify-center px-4 text-center relative overflow-hidden">
+      <button
+        onClick={handleLogout}
+        className="absolute top-6 right-6 text-sm text-gray-400 hover:text-gray-600 transition-colors"
+      >
+        Log out
+      </button>
       <div className="max-w-2xl">
         <h1 className="font-serif text-5xl md:text-6xl font-bold text-gray-900 mb-6">
           Welcome to the<br />
