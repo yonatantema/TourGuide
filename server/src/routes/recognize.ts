@@ -1,6 +1,7 @@
 import { Router } from "express";
 import OpenAI from "openai";
 import pool from "../db";
+import { checkLimit, incrementUsage } from "../services/usageLimits";
 
 const router = Router();
 
@@ -35,6 +36,17 @@ const identifyArtworkTool: OpenAI.ChatCompletionTool = {
 
 router.post("/", async (req, res) => {
   try {
+    const limitCheck = await checkLimit(req.user!.id, "image_recognition");
+    if (!limitCheck.allowed) {
+      return res.status(429).json({
+        error: "Monthly image recognition limit reached",
+        code: "USAGE_LIMIT_REACHED",
+        action: "image_recognition",
+        current: limitCheck.current,
+        limit: limitCheck.limit,
+      });
+    }
+
     const { image } = req.body;
 
     if (!image || typeof image !== "string") {
@@ -85,6 +97,8 @@ router.post("/", async (req, res) => {
       ],
       tools: [identifyArtworkTool],
     });
+
+    await incrementUsage(req.user!.id, "image_recognition");
 
     const message = response.choices[0]?.message;
     const toolCall = message?.tool_calls?.[0];

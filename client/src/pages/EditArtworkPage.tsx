@@ -40,9 +40,13 @@ export default function EditArtworkPage() {
       }
       await updateArtwork(Number(id), formData);
       navigate(`/gallery/${id}`);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to update artwork");
+    } catch (err: any) {
+      if (err?.code === "USAGE_LIMIT_REACHED") {
+        alert("You've reached your monthly artwork creation limit (10/month). Your limit resets at the start of next month.");
+      } else {
+        console.error(err);
+        alert("Failed to update artwork");
+      }
     } finally {
       setSubmitting(false);
     }

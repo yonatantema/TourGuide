@@ -156,8 +156,14 @@ export default function GuideTourPage() {
       } else {
         setRecognitionState("not-recognized");
       }
-    } catch {
-      setRecognitionState("not-recognized");
+    } catch (err: any) {
+      if (err?.code === "USAGE_LIMIT_REACHED") {
+        alert("You've reached your monthly image recognition limit (30/month). Your limit resets at the start of next month.");
+        setCapturedImage(null);
+        setRecognitionState("idle");
+      } else {
+        setRecognitionState("not-recognized");
+      }
     }
   };
 

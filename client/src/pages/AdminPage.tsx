@@ -1,6 +1,39 @@
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { getUsage, UsageData } from "../services/usageApi";
+
+function UsageBar({ label, used, limit, format }: { label: string; used: number; limit: number; format?: (n: number) => string }) {
+  const pct = Math.min((used / limit) * 100, 100);
+  const fmt = format || ((n: number) => String(n));
+  return (
+    <div>
+      <div className="flex justify-between text-sm mb-1">
+        <span className="text-gray-600">{label}</span>
+        <span className="text-gray-500">{fmt(used)} / {fmt(limit)}</span>
+      </div>
+      <div className="w-full bg-gray-200 rounded-full h-2">
+        <div
+          className={`h-2 rounded-full transition-all ${pct >= 100 ? "bg-red-500" : pct >= 80 ? "bg-yellow-500" : "bg-accent"}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function formatMinutes(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
 
 export default function AdminPage() {
+  const [usage, setUsage] = useState<UsageData | null>(null);
+
+  useEffect(() => {
+    getUsage().then(setUsage).catch(console.error);
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col px-6 py-10">
       <Link
@@ -51,6 +84,18 @@ export default function AdminPage() {
             </Link>
           </div>
         </div>
+
+        {/* Monthly Usage */}
+        {usage && (
+          <div className="max-w-2xl w-full mt-8 bg-white rounded-xl border border-dashed border-gray-300 p-6">
+            <h2 className="font-serif text-lg font-bold text-gray-900 mb-4">Monthly Usage</h2>
+            <div className="space-y-4">
+              <UsageBar label="Artwork Creations" used={usage.artwork_creation.used} limit={usage.artwork_creation.limit} />
+              <UsageBar label="Image Recognitions" used={usage.image_recognition.used} limit={usage.image_recognition.limit} />
+              <UsageBar label="Conversation Time" used={usage.conversation_seconds.used} limit={usage.conversation_seconds.limit} format={formatMinutes} />
+            </div>
+          </div>
+        )}
       </div>
 
       <footer className="text-center text-sm text-gray-400 mt-12">

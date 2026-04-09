@@ -32,6 +32,17 @@ export async function apiFetch(
     window.location.href = "/login";
     throw new Error("Authentication required");
   }
+  if (res.status === 429) {
+    const data = await res.clone().json().catch(() => null);
+    if (data?.code === "USAGE_LIMIT_REACHED") {
+      const err = new Error(data.error || "Usage limit reached") as any;
+      err.code = "USAGE_LIMIT_REACHED";
+      err.action = data.action;
+      err.current = data.current;
+      err.limit = data.limit;
+      throw err;
+    }
+  }
   if (res.status === 403) {
     const data = await res.clone().json().catch(() => null);
     if (data?.code === "NEEDS_SETUP") {

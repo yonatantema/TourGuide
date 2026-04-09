@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Artwork, UPLOADS_URL } from "../services/artworkApi";
-import { createRealtimeSession } from "../services/conversationApi";
+import { createRealtimeSession, reportConversationEnd } from "../services/conversationApi";
+import { API_URL, getToken } from "../services/api";
 
 type ConversationStatus =
   | "idle"
@@ -79,6 +80,8 @@ export default function ConversationModal({
   const [volume, setVolume] = useState(0.6);
   const [transcriptLog, setTranscriptLog] = useState<{ speaker: "guide" | "visitor"; text: string }[]>([]);
   const [showTranscript, setShowTranscript] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [limitError, setLimitError] = useState<string | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -96,6 +99,9 @@ export default function ConversationModal({
   const volumeRef = useRef(0.6);
   const currentGuideTextRef = useRef("");
   const transcriptEndRef = useRef<HTMLDivElement>(null);
+  const conversationStartRef = useRef<number | null>(null);
+  const remainingSecondsRef = useRef<number>(600);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     statusRef.current = status;
@@ -154,6 +160,10 @@ export default function ConversationModal({
   }, [reacquireMic]);
 
   const cleanup = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
     wsRef.current?.close();
     wsRef.current = null;
     micStreamRef.current?.getTracks().forEach((t) => t.stop());
@@ -176,7 +186,23 @@ export default function ConversationModal({
   }, []);
 
   useEffect(() => {
-    return cleanup;
+    return () => {
+      // Report duration on unmount (e.g., tab close)
+      if (conversationStartRef.current) {
+        const seconds = Math.round((Date.now() - conversationStartRef.current) / 1000);
+        if (seconds > 0) {
+          const token = getToken();
+          fetch(`${API_URL}/api/conversation/end`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ durationSeconds: seconds }),
+            keepalive: true,
+          }).catch(() => {});
+        }
+        conversationStartRef.current = null;
+      }
+      cleanup();
+    };
   }, [cleanup]);
 
   const ensurePlaybackStream = () => {
@@ -250,13 +276,15 @@ export default function ConversationModal({
 
   const handleStartConversation = async () => {
     setStatus("connecting");
+    setLimitError(null);
 
     try {
       // Request mic access immediately so the browser prompts the user
       const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       micStreamRef.current = micStream;
 
-      const { clientSecret } = await createRealtimeSession(guideId, artwork.id, language);
+      const { clientSecret, remainingSeconds } = await createRealtimeSession(guideId, artwork.id, language);
+      remainingSecondsRef.current = remainingSeconds;
 
       const ws = new WebSocket(
         "wss://api.openai.com/v1/realtime?model=gpt-realtime-2025-08-28",
@@ -271,6 +299,23 @@ export default function ConversationModal({
         // Trigger initial AI greeting
         ws.send(JSON.stringify({ type: "response.create" }));
         setStatus("playing");
+
+        // Start conversation timer
+        const startTime = Date.now();
+        conversationStartRef.current = startTime;
+        timerRef.current = setInterval(() => {
+          const elapsed = Math.round((Date.now() - startTime) / 1000);
+          setElapsedSeconds(elapsed);
+          if (elapsed >= remainingSecondsRef.current) {
+            // Auto-end: time limit reached
+            if (timerRef.current) clearInterval(timerRef.current);
+            timerRef.current = null;
+            reportConversationEnd(elapsed).catch(console.error);
+            conversationStartRef.current = null;
+            cleanup();
+            onClose();
+          }
+        }, 1000);
       };
 
       ws.onmessage = (event) => {
@@ -341,9 +386,16 @@ export default function ConversationModal({
       };
 
       wsRef.current = ws;
-    } catch (err) {
-      console.error("Failed to start conversation:", err);
-      setStatus("error");
+    } catch (err: any) {
+      if (err?.code === "USAGE_LIMIT_REACHED") {
+        micStreamRef.current?.getTracks().forEach((t) => t.stop());
+        micStreamRef.current = null;
+        setLimitError("You've reached your monthly conversation time limit (10 min/month). Your limit resets at the start of next month.");
+        setStatus("idle");
+      } else {
+        console.error("Failed to start conversation:", err);
+        setStatus("error");
+      }
     }
   };
 
@@ -469,6 +521,13 @@ export default function ConversationModal({
   };
 
   const handleEndConversation = () => {
+    if (conversationStartRef.current) {
+      const seconds = Math.round((Date.now() - conversationStartRef.current) / 1000);
+      conversationStartRef.current = null;
+      if (seconds > 0) {
+        reportConversationEnd(seconds).catch(console.error);
+      }
+    }
     cleanup();
     onClose();
   };
@@ -498,12 +557,19 @@ export default function ConversationModal({
 
         {/* Idle state — Start button */}
         {status === "idle" && (
-          <button
-            onClick={handleStartConversation}
-            className="flex-shrink-0 w-full py-3 bg-accent text-white rounded-md text-sm font-medium hover:opacity-80 transition-opacity cursor-pointer"
-          >
-            Start a Conversation
-          </button>
+          <>
+            {limitError && (
+              <p className="text-red-500 text-sm text-center">{limitError}</p>
+            )}
+            {!limitError && (
+              <button
+                onClick={handleStartConversation}
+                className="flex-shrink-0 w-full py-3 bg-accent text-white rounded-md text-sm font-medium hover:opacity-80 transition-opacity cursor-pointer"
+              >
+                Start a Conversation
+              </button>
+            )}
+          </>
         )}
 
         {/* Connecting */}
@@ -559,6 +625,9 @@ export default function ConversationModal({
               {status === "recording" && "Listening... Click to send"}
               {status === "processing" && "Thinking..."}
               {status === "playing" && "Speaking... Click to interrupt"}
+            </p>
+            <p className="text-gray-400 text-xs">
+              {Math.floor(elapsedSeconds / 60)}:{String(elapsedSeconds % 60).padStart(2, "0")} / {Math.floor(remainingSecondsRef.current / 60)}:{String(remainingSecondsRef.current % 60).padStart(2, "0")}
             </p>
           </div>
         )}

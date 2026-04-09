@@ -66,6 +66,16 @@ CREATE TABLE IF NOT EXISTS seed_artworks (
   visual_analysis TEXT
 );
 
+-- Usage tracking for monthly limits
+CREATE TABLE IF NOT EXISTS usage_counters (
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  year SMALLINT NOT NULL,
+  month SMALLINT NOT NULL,
+  action_type VARCHAR(30) NOT NULL,
+  count INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (user_id, year, month, action_type)
+);
+
 CREATE TABLE IF NOT EXISTS seed_guides (
   id SERIAL PRIMARY KEY,
   name VARCHAR(255) NOT NULL,

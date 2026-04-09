@@ -1,6 +1,7 @@
 import { Router } from "express";
 import OpenAI from "openai";
 import pool from "../db";
+import { checkLimit, incrementUsage, USAGE_LIMITS } from "../services/usageLimits";
 
 const router = Router();
 
@@ -8,11 +9,18 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 router.post("/session", async (req, res) => {
   try {
-    const { guideId, artworkId, language } = req.body;
-
-    if (!guideId || !artworkId) {
-      return res.status(400).json({ error: "guideId and artworkId are required" });
+    const limitCheck = await checkLimit(req.user!.id, "conversation_seconds");
+    if (!limitCheck.allowed) {
+      return res.status(429).json({
+        error: "Monthly conversation time limit reached",
+        code: "USAGE_LIMIT_REACHED",
+        action: "conversation_seconds",
+        current: limitCheck.current,
+        limit: limitCheck.limit,
+      });
     }
+
+    const { guideId, artworkId, language } = req.body;
 
     const [guideResult, artworkResult] = await Promise.all([
       pool.query("SELECT * FROM guides WHERE id = $1 AND org_id = $2", [guideId, req.orgId]),
@@ -85,13 +93,38 @@ ${topicRestriction}`;
       turn_detection: null as any, // push-to-talk: disable server VAD
     });
 
+    const remainingSeconds = USAGE_LIMITS.conversation_seconds - limitCheck.current;
+
     return res.json({
       clientSecret: (session as any).client_secret?.value,
       expiresAt: (session as any).client_secret?.expires_at,
+      remainingSeconds,
     });
   } catch (err) {
     console.error("Conversation session error:", err);
     res.status(500).json({ error: "Failed to create conversation session" });
+  }
+});
+
+router.post("/end", async (req, res) => {
+  try {
+    const { durationSeconds } = req.body;
+
+    if (typeof durationSeconds !== "number" || durationSeconds < 0) {
+      return res.status(400).json({ error: "Invalid duration" });
+    }
+
+    // Clamp to 15 minutes max to prevent abuse
+    const clamped = Math.min(Math.round(durationSeconds), 900);
+
+    if (clamped > 0) {
+      await incrementUsage(req.user!.id, "conversation_seconds", clamped);
+    }
+
+    res.json({ recorded: clamped });
+  } catch (err) {
+    console.error("Conversation end error:", err);
+    res.status(500).json({ error: "Failed to record conversation duration" });
   }
 });
 

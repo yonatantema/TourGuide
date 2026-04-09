@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import pool from "../db";
 import upload from "../middleware/upload";
 import { analyzeArtworkImage } from "../services/visualAnalysis";
+import { checkLimit, incrementUsage } from "../services/usageLimits";
 import fs from "fs";
 import path from "path";
 
@@ -42,6 +43,17 @@ router.get("/:id", async (req: Request, res: Response) => {
 // POST /api/artworks — Create artwork (multipart)
 router.post("/", upload.single("image"), async (req: Request, res: Response) => {
   try {
+    const limitCheck = await checkLimit(req.user!.id, "artwork_creation");
+    if (!limitCheck.allowed) {
+      return res.status(429).json({
+        error: "Monthly artwork creation limit reached",
+        code: "USAGE_LIMIT_REACHED",
+        action: "artwork_creation",
+        current: limitCheck.current,
+        limit: limitCheck.limit,
+      });
+    }
+
     const { artist_name, artwork_name, artwork_info } = req.body;
     if (!req.file) {
       return res.status(400).json({ error: "Image is required" });
@@ -52,6 +64,7 @@ router.post("/", upload.single("image"), async (req: Request, res: Response) => 
       [artist_name, artwork_name, artwork_info, image_filename, req.orgId]
     );
     const artwork = result.rows[0];
+    await incrementUsage(req.user!.id, "artwork_creation");
     analyzeArtworkImage(artwork.image_filename, artwork.id, req.orgId!).catch(() => {});
     res.status(201).json(artwork);
   } catch (err) {
@@ -77,8 +90,18 @@ router.put("/:id", upload.single("image"), async (req: Request, res: Response) =
 
     let image_filename = existing.rows[0].image_filename;
 
-    // If new image uploaded, delete old one (skip seed images) and use new filename
+    // If new image uploaded, check usage limit, delete old one (skip seed images) and use new filename
     if (req.file) {
+      const limitCheck = await checkLimit(req.user!.id, "artwork_creation");
+      if (!limitCheck.allowed) {
+        return res.status(429).json({
+          error: "Monthly artwork creation limit reached",
+          code: "USAGE_LIMIT_REACHED",
+          action: "artwork_creation",
+          current: limitCheck.current,
+          limit: limitCheck.limit,
+        });
+      }
       if (!image_filename.startsWith("seed/")) {
         const oldImagePath = path.join(__dirname, "../../uploads", image_filename);
         if (fs.existsSync(oldImagePath)) {
@@ -99,6 +122,7 @@ router.put("/:id", upload.single("image"), async (req: Request, res: Response) =
         );
 
     if (req.file) {
+      await incrementUsage(req.user!.id, "artwork_creation");
       analyzeArtworkImage(image_filename, Number(id), req.orgId!).catch(() => {});
     }
 

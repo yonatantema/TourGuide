@@ -22,9 +22,13 @@ export default function AddArtworkPage() {
       formData.append("image", image);
       await createArtwork(formData);
       navigate("/gallery");
-    } catch (err) {
-      console.error(err);
-      alert("Failed to add artwork");
+    } catch (err: any) {
+      if (err?.code === "USAGE_LIMIT_REACHED") {
+        alert("You've reached your monthly artwork creation limit (10/month). Your limit resets at the start of next month.");
+      } else {
+        console.error(err);
+        alert("Failed to add artwork");
+      }
     } finally {
       setSubmitting(false);
     }
