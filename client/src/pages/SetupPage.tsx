@@ -45,7 +45,7 @@ export default function SetupPage() {
     <div className="h-[100dvh] flex flex-col items-center justify-center px-4 text-center">
       <div className="max-w-md w-full">
         <h1 className="font-serif text-4xl font-bold text-gray-900 mb-2">
-          Welcome, {user?.name?.split(" ")[0]}!
+          Welcome{user?.name ? `, ${user.name.split(" ")[0]}` : ""}!
         </h1>
         <p className="text-gray-600 mb-8">
           Let's set up your account. Give your museum a name and choose how to start.
