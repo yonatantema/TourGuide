@@ -241,15 +241,6 @@ export default function ConversationModal({
     playbackBufferRef.current.push(float32);
   };
 
-  const stopPlayback = () => {
-    playbackProcessorRef.current?.disconnect();
-    playbackProcessorRef.current = null;
-    playbackCtxRef.current?.close();
-    playbackCtxRef.current = null;
-    playbackBufferRef.current = [];
-    playbackOffsetRef.current = 0;
-  };
-
   const handleStartConversation = async () => {
     setStatus("connecting");
     setLimitError(null);
@@ -490,12 +481,18 @@ export default function ConversationModal({
     if (status === "recording") {
       stopRecording();
     } else if (status === "ready" || status === "playing" || status === "processing") {
-      // Interrupt AI: cancel server response, stop playback, start recording
+      // Interrupt AI: cancel server response, stop audio, start recording
       const ws = wsRef.current;
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ type: "response.cancel" }));
       }
-      stopPlayback();
+      // Clear buffer to stop audio immediately but keep playback context alive —
+      // avoids creating a new AudioContext which triggers Safari audio session
+      // changes and volume instability.
+      playbackBufferRef.current = [];
+      playbackOffsetRef.current = 0;
+      // Block incoming audio deltas immediately (before async getUserMedia resolves)
+      statusRef.current = "recording";
       startRecording();
     }
   };
