@@ -495,12 +495,17 @@ export default function ConversationModal({
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ type: "response.cancel" }));
       }
-      // Clear buffer to stop audio immediately but keep playback context alive —
-      // avoids creating a new AudioContext which triggers Safari audio session
-      // changes and volume instability.
+      // Destroy playback context to guarantee silence — just clearing the buffer
+      // isn't enough because iOS audio session renegotiation during getUserMedia
+      // can cause the ScriptProcessor to glitch and output garbled audio.
+      playbackProcessorRef.current?.disconnect();
+      playbackProcessorRef.current = null;
+      playbackCtxRef.current?.close();
+      playbackCtxRef.current = null;
       playbackBufferRef.current = [];
       playbackOffsetRef.current = 0;
-      // Block incoming audio deltas immediately (before async getUserMedia resolves)
+      // Update UI and block audio deltas immediately (before async getUserMedia)
+      setStatus("recording");
       statusRef.current = "recording";
       startRecording();
     }
