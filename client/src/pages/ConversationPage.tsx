@@ -77,7 +77,6 @@ export default function ConversationModal({
   onClose,
 }: ConversationModalProps) {
   const [status, setStatus] = useState<ConversationStatus>("idle");
-  const [volume, setVolume] = useState(0.6);
   const [transcriptLog, setTranscriptLog] = useState<{ speaker: "guide" | "visitor"; text: string }[]>([]);
   const [showTranscript, setShowTranscript] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -92,11 +91,9 @@ export default function ConversationModal({
   const silentChunksRef = useRef(0);
   const playbackCtxRef = useRef<AudioContext | null>(null);
   const playbackProcessorRef = useRef<ScriptProcessorNode | null>(null);
-  const playbackGainRef = useRef<GainNode | null>(null);
   const playbackBufferRef = useRef<Float32Array[]>([]);
   const playbackOffsetRef = useRef(0);
   const statusRef = useRef<ConversationStatus>("idle");
-  const volumeRef = useRef(0.6);
   const currentGuideTextRef = useRef("");
   const transcriptEndRef = useRef<HTMLDivElement>(null);
   const conversationStartRef = useRef<number | null>(null);
@@ -106,14 +103,6 @@ export default function ConversationModal({
   useEffect(() => {
     statusRef.current = status;
   }, [status]);
-
-  const handleVolumeChange = (val: number) => {
-    setVolume(val);
-    volumeRef.current = val;
-    if (playbackGainRef.current) {
-      playbackGainRef.current.gain.value = val;
-    }
-  };
 
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -150,8 +139,8 @@ export default function ConversationModal({
 
   useEffect(() => {
     const handleDeviceChange = () => {
-      // Only re-acquire if we have an active conversation
-      if (micStreamRef.current) {
+      // Only re-acquire if actively recording — not during AI playback
+      if (statusRef.current === "recording" && micStreamRef.current) {
         reacquireMic();
       }
     };
@@ -176,8 +165,6 @@ export default function ConversationModal({
     audioContextRef.current = null;
     playbackProcessorRef.current?.disconnect();
     playbackProcessorRef.current = null;
-    playbackGainRef.current?.disconnect();
-    playbackGainRef.current = null;
     playbackCtxRef.current?.close();
     playbackCtxRef.current = null;
     playbackBufferRef.current = [];
@@ -241,33 +228,22 @@ export default function ConversationModal({
       }
     };
 
-    // Volume control — adjustable via slider
-    const gain = ctx.createGain();
-    gain.gain.value = volumeRef.current;
-    playbackGainRef.current = gain;
-
     // Silent input to keep the processor firing
     const silent = ctx.createConstantSource();
     silent.offset.value = 0;
     silent.connect(processor);
-    processor.connect(gain);
-    gain.connect(ctx.destination);
+    processor.connect(ctx.destination);
     silent.start();
   };
 
   const enqueueAudio = (float32: Float32Array) => {
     ensurePlaybackStream();
-    if (playbackCtxRef.current?.state === "suspended") {
-      playbackCtxRef.current.resume();
-    }
     playbackBufferRef.current.push(float32);
   };
 
   const stopPlayback = () => {
     playbackProcessorRef.current?.disconnect();
     playbackProcessorRef.current = null;
-    playbackGainRef.current?.disconnect();
-    playbackGainRef.current = null;
     playbackCtxRef.current?.close();
     playbackCtxRef.current = null;
     playbackBufferRef.current = [];
@@ -279,9 +255,10 @@ export default function ConversationModal({
     setLimitError(null);
 
     try {
-      // Request mic access immediately so the browser prompts the user
+      // Request mic access to trigger browser permission prompt, then release
+      // so Safari exits "playAndRecord" mode during the AI greeting playback.
       const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      micStreamRef.current = micStream;
+      micStream.getTracks().forEach((t) => t.stop());
 
       const { clientSecret, remainingSeconds } = await createRealtimeSession(guideId, artwork.id, language);
       remainingSecondsRef.current = remainingSeconds;
@@ -451,7 +428,10 @@ export default function ConversationModal({
     sourceRef.current = null;
     processorRef.current?.disconnect();
     processorRef.current = null;
-    // Keep mic stream alive for reuse — only close AudioContext
+    // Release mic stream so Safari exits "playAndRecord" audio session mode,
+    // which eliminates system-level output AGC causing volume fluctuations.
+    micStreamRef.current?.getTracks().forEach((t) => t.stop());
+    micStreamRef.current = null;
     audioContextRef.current?.close();
     audioContextRef.current = null;
 
@@ -645,24 +625,6 @@ export default function ConversationModal({
             >
               Try Again
             </button>
-          </div>
-        )}
-
-        {/* Volume slider */}
-        {showEndButton && status !== "error" && (
-          <div className="flex items-center gap-2 flex-shrink-0 w-full px-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.536 8.464a5 5 0 010 7.072M12 6.253v11.494m0-11.494A4.49 4.49 0 019.652 8H7a2 2 0 00-2 2v4a2 2 0 002 2h2.652a4.49 4.49 0 012.348 1.747m0-11.494A4.49 4.49 0 0114.348 8" />
-            </svg>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.05"
-              value={volume}
-              onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-              className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-accent"
-            />
           </div>
         )}
 
