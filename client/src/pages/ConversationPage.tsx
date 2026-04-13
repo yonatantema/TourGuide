@@ -425,6 +425,15 @@ export default function ConversationModal({
     micStreamRef.current = null;
     audioContextRef.current?.close();
     audioContextRef.current = null;
+    // Also destroy the playback context — iOS Safari keeps audio routed through
+    // the earpiece/voice-processing pipeline after getUserMedia until a fresh
+    // AudioContext is created without an active mic stream.
+    playbackProcessorRef.current?.disconnect();
+    playbackProcessorRef.current = null;
+    playbackCtxRef.current?.close();
+    playbackCtxRef.current = null;
+    playbackBufferRef.current = [];
+    playbackOffsetRef.current = 0;
 
     const ws = wsRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) {
