@@ -36,7 +36,7 @@ const identifyArtworkTool: OpenAI.ChatCompletionTool = {
 
 router.post("/", async (req, res) => {
   try {
-    const limitCheck = await checkLimit(req.user!.id, "image_recognition");
+    const limitCheck = await checkLimit(req.user!.id, req.user!.email, "image_recognition");
     if (!limitCheck.allowed) {
       return res.status(429).json({
         error: "Monthly image recognition limit reached",
@@ -98,7 +98,7 @@ router.post("/", async (req, res) => {
       tools: [identifyArtworkTool],
     });
 
-    await incrementUsage(req.user!.id, "image_recognition");
+    await incrementUsage(req.user!.id, req.user!.email, "image_recognition");
 
     const message = response.choices[0]?.message;
     const toolCall = message?.tool_calls?.[0];

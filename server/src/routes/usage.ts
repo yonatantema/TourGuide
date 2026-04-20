@@ -1,10 +1,13 @@
 import { Router, Request, Response } from "express";
-import { getAllUsage, USAGE_LIMITS } from "../services/usageLimits";
+import { getAllUsage, isUnlimitedUser, USAGE_LIMITS } from "../services/usageLimits";
 
 const router = Router();
 
 router.get("/", async (req: Request, res: Response) => {
   try {
+    if (isUnlimitedUser(req.user!.email)) {
+      return res.json({ unlimited: true });
+    }
     const usage = await getAllUsage(req.user!.id);
     res.json({
       artwork_creation: { used: usage.artwork_creation, limit: USAGE_LIMITS.artwork_creation },

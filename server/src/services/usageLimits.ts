@@ -8,6 +8,16 @@ export const USAGE_LIMITS = {
 
 export type ActionType = keyof typeof USAGE_LIMITS;
 
+export function isUnlimitedUser(email: string): boolean {
+  const domains = (process.env.UNLIMITED_USER_DOMAINS || "")
+    .split(",")
+    .map((d) => d.trim().toLowerCase())
+    .filter(Boolean);
+  if (domains.length === 0) return false;
+  const emailDomain = email.toLowerCase().split("@")[1];
+  return !!emailDomain && domains.includes(emailDomain);
+}
+
 export async function getCurrentUsage(
   userId: string,
   action: ActionType
@@ -41,9 +51,11 @@ export async function getAllUsage(
 
 export async function incrementUsage(
   userId: string,
+  email: string,
   action: ActionType,
   amount: number = 1
 ): Promise<number> {
+  if (isUnlimitedUser(email)) return 0;
   const now = new Date();
   const result = await pool.query(
     `INSERT INTO usage_counters (user_id, year, month, action_type, count)
@@ -58,8 +70,12 @@ export async function incrementUsage(
 
 export async function checkLimit(
   userId: string,
+  email: string,
   action: ActionType
 ): Promise<{ allowed: boolean; current: number; limit: number }> {
+  if (isUnlimitedUser(email)) {
+    return { allowed: true, current: 0, limit: Number.MAX_SAFE_INTEGER };
+  }
   const current = await getCurrentUsage(userId, action);
   const limit = USAGE_LIMITS[action];
   return { allowed: current < limit, current, limit };

@@ -89,11 +89,15 @@ export default function AdminPage() {
         {usage && (
           <div className="max-w-2xl w-full mt-8 bg-white rounded-xl border border-dashed border-gray-300 p-6">
             <h2 className="font-serif text-lg font-bold text-gray-900 mb-4">Monthly Usage</h2>
-            <div className="space-y-4">
-              <UsageBar label="Artwork Creations" used={usage.artwork_creation.used} limit={usage.artwork_creation.limit} />
-              <UsageBar label="Image Recognitions" used={usage.image_recognition.used} limit={usage.image_recognition.limit} />
-              <UsageBar label="Conversation Time" used={usage.conversation_seconds.used} limit={usage.conversation_seconds.limit} format={formatMinutes} />
-            </div>
+            {usage.unlimited ? (
+              <p className="text-gray-600 text-sm">Unlimited — no monthly caps on this account.</p>
+            ) : (
+              <div className="space-y-4">
+                <UsageBar label="Artwork Creations" used={usage.artwork_creation.used} limit={usage.artwork_creation.limit} />
+                <UsageBar label="Image Recognitions" used={usage.image_recognition.used} limit={usage.image_recognition.limit} />
+                <UsageBar label="Conversation Time" used={usage.conversation_seconds.used} limit={usage.conversation_seconds.limit} format={formatMinutes} />
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -9,7 +9,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 router.post("/session", async (req, res) => {
   try {
-    const limitCheck = await checkLimit(req.user!.id, "conversation_seconds");
+    const limitCheck = await checkLimit(req.user!.id, req.user!.email, "conversation_seconds");
     if (!limitCheck.allowed) {
       return res.status(429).json({
         error: "Monthly conversation time limit reached",
@@ -118,7 +118,7 @@ router.post("/end", async (req, res) => {
     const clamped = Math.min(Math.round(durationSeconds), 900);
 
     if (clamped > 0) {
-      await incrementUsage(req.user!.id, "conversation_seconds", clamped);
+      await incrementUsage(req.user!.id, req.user!.email, "conversation_seconds", clamped);
     }
 
     res.json({ recorded: clamped });
