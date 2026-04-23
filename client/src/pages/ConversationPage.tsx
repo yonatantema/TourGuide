@@ -3,6 +3,15 @@ import { Artwork, UPLOADS_URL } from "../services/artworkApi";
 import { createRealtimeSession, reportConversationEnd } from "../services/conversationApi";
 import { API_URL, getToken } from "../services/api";
 
+// Only iOS Safari needs the playback-context teardown workarounds — those
+// mitigate the earpiece/loudspeaker routing change triggered by getUserMedia.
+// On other browsers the teardown costs a 200–500ms audio pipeline startup
+// whenever the context is recreated, which clips the first word of the reply.
+const IS_IOS =
+  typeof navigator !== "undefined" &&
+  (/iPhone|iPad|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
+
 type ConversationStatus =
   | "idle"
   | "connecting"
@@ -425,15 +434,19 @@ export default function ConversationModal({
     micStreamRef.current = null;
     audioContextRef.current?.close();
     audioContextRef.current = null;
-    // Also destroy the playback context — iOS Safari keeps audio routed through
-    // the earpiece/voice-processing pipeline after getUserMedia until a fresh
-    // AudioContext is created without an active mic stream.
-    playbackProcessorRef.current?.disconnect();
-    playbackProcessorRef.current = null;
-    playbackCtxRef.current?.close();
-    playbackCtxRef.current = null;
-    playbackBufferRef.current = [];
-    playbackOffsetRef.current = 0;
+    // Only iOS Safari needs the playback context destroyed here — it keeps
+    // audio routed through the earpiece until a fresh AudioContext is created
+    // without an active mic stream. On other browsers we keep it alive so the
+    // AI's next response starts instantly instead of waiting for a new
+    // ScriptProcessor pipeline to spin up.
+    if (IS_IOS) {
+      playbackProcessorRef.current?.disconnect();
+      playbackProcessorRef.current = null;
+      playbackCtxRef.current?.close();
+      playbackCtxRef.current = null;
+      playbackBufferRef.current = [];
+      playbackOffsetRef.current = 0;
+    }
 
     const ws = wsRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) {
@@ -484,15 +497,19 @@ export default function ConversationModal({
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ type: "response.cancel" }));
       }
-      // Destroy playback context to guarantee silence — just clearing the buffer
-      // isn't enough because iOS audio session renegotiation during getUserMedia
-      // can cause the ScriptProcessor to glitch and output garbled audio.
-      playbackProcessorRef.current?.disconnect();
-      playbackProcessorRef.current = null;
-      playbackCtxRef.current?.close();
-      playbackCtxRef.current = null;
+      // Clearing the buffer immediately silences any in-flight AI audio. On
+      // iOS Safari we also fully destroy the playback context — audio-session
+      // renegotiation during getUserMedia can otherwise make the ScriptProcessor
+      // glitch and output garbled audio. Other browsers don't have that issue
+      // and keeping the context alive avoids a first-word gap on the next reply.
       playbackBufferRef.current = [];
       playbackOffsetRef.current = 0;
+      if (IS_IOS) {
+        playbackProcessorRef.current?.disconnect();
+        playbackProcessorRef.current = null;
+        playbackCtxRef.current?.close();
+        playbackCtxRef.current = null;
+      }
       // Update UI and block audio deltas immediately (before async getUserMedia)
       setStatus("recording");
       statusRef.current = "recording";
