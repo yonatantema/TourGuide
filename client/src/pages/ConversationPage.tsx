@@ -99,9 +99,12 @@ export default function ConversationModal({
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const silentChunksRef = useRef(0);
   const playbackCtxRef = useRef<AudioContext | null>(null);
-  const playbackProcessorRef = useRef<ScriptProcessorNode | null>(null);
-  const playbackBufferRef = useRef<Float32Array[]>([]);
-  const playbackOffsetRef = useRef(0);
+  // Scheduled playback state. Each incoming audio chunk becomes an
+  // AudioBufferSourceNode scheduled on the audio clock, which avoids the
+  // main-thread timing jitter that ScriptProcessorNode suffers from on
+  // Windows Chrome (the source of stutters during replies).
+  const scheduledEndRef = useRef(0);
+  const activeSourcesRef = useRef<AudioBufferSourceNode[]>([]);
   const statusRef = useRef<ConversationStatus>("idle");
   const currentGuideTextRef = useRef("");
   const transcriptEndRef = useRef<HTMLDivElement>(null);
@@ -172,12 +175,9 @@ export default function ConversationModal({
     processorRef.current = null;
     audioContextRef.current?.close();
     audioContextRef.current = null;
-    playbackProcessorRef.current?.disconnect();
-    playbackProcessorRef.current = null;
+    stopAllScheduledPlayback();
     playbackCtxRef.current?.close();
     playbackCtxRef.current = null;
-    playbackBufferRef.current = [];
-    playbackOffsetRef.current = 0;
     audioChunksRef.current = [];
   }, []);
 
@@ -210,44 +210,42 @@ export default function ConversationModal({
     }
     const ctx = new AudioContext({ sampleRate: 24000 });
     playbackCtxRef.current = ctx;
-    const processor = ctx.createScriptProcessor(2048, 1, 1);
-    playbackProcessorRef.current = processor;
-
-    processor.onaudioprocess = (e) => {
-      const output = e.outputBuffer.getChannelData(0);
-      let written = 0;
-      while (written < output.length && playbackBufferRef.current.length > 0) {
-        const chunk = playbackBufferRef.current[0];
-        const offset = playbackOffsetRef.current;
-        const remaining = chunk.length - offset;
-        const needed = output.length - written;
-        if (remaining <= needed) {
-          output.set(chunk.subarray(offset), written);
-          written += remaining;
-          playbackBufferRef.current.shift();
-          playbackOffsetRef.current = 0;
-        } else {
-          output.set(chunk.subarray(offset, offset + needed), written);
-          written += needed;
-          playbackOffsetRef.current = offset + needed;
-        }
-      }
-      for (let i = written; i < output.length; i++) {
-        output[i] = 0;
-      }
-    };
-
-    // Silent input to keep the processor firing
-    const silent = ctx.createConstantSource();
-    silent.offset.value = 0;
-    silent.connect(processor);
-    processor.connect(ctx.destination);
-    silent.start();
   };
 
   const enqueueAudio = (float32: Float32Array) => {
     ensurePlaybackStream();
-    playbackBufferRef.current.push(float32);
+    const ctx = playbackCtxRef.current!;
+    const buffer = ctx.createBuffer(1, float32.length, 24000);
+    buffer.getChannelData(0).set(float32);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ctx.destination);
+
+    // First chunk of a reply gets a small jitter buffer so network variance
+    // can't underrun the schedule. Subsequent chunks chain back-to-back on
+    // the audio clock so playback is glitch-free regardless of main-thread
+    // load.
+    const JITTER_SEC = 0.12;
+    const now = ctx.currentTime;
+    const startAt = Math.max(now + JITTER_SEC, scheduledEndRef.current);
+    source.start(startAt);
+    scheduledEndRef.current = startAt + buffer.duration;
+
+    activeSourcesRef.current.push(source);
+    source.onended = () => {
+      const i = activeSourcesRef.current.indexOf(source);
+      if (i >= 0) activeSourcesRef.current.splice(i, 1);
+      try { source.disconnect(); } catch {}
+    };
+  };
+
+  const stopAllScheduledPlayback = () => {
+    activeSourcesRef.current.forEach((s) => {
+      try { s.stop(); } catch {}
+      try { s.disconnect(); } catch {}
+    });
+    activeSourcesRef.current = [];
+    scheduledEndRef.current = 0;
   };
 
   const handleStartConversation = async () => {
@@ -327,17 +325,16 @@ export default function ConversationModal({
         }
 
         if (data.type === "response.audio.done") {
-          // Only transition to ready if still in playing state
           if (statusRef.current !== "playing") return;
-          // Wait for the playback buffer to drain before transitioning
-          const checkDrained = setInterval(() => {
-            if (playbackBufferRef.current.length === 0) {
-              clearInterval(checkDrained);
-              if (statusRef.current === "playing") {
-                setStatus("ready");
-              }
+          const ctx = playbackCtxRef.current;
+          const remainingMs = ctx
+            ? Math.max(0, (scheduledEndRef.current - ctx.currentTime) * 1000)
+            : 0;
+          setTimeout(() => {
+            if (statusRef.current === "playing") {
+              setStatus("ready");
             }
-          }, 100);
+          }, remainingMs + 50);
         }
 
         if (data.type === "error") {
@@ -436,16 +433,12 @@ export default function ConversationModal({
     audioContextRef.current = null;
     // Only iOS Safari needs the playback context destroyed here — it keeps
     // audio routed through the earpiece until a fresh AudioContext is created
-    // without an active mic stream. On other browsers we keep it alive so the
-    // AI's next response starts instantly instead of waiting for a new
-    // ScriptProcessor pipeline to spin up.
+    // without an active mic stream. Other browsers keep it alive so the AI's
+    // next reply starts instantly instead of waiting for a new audio pipeline.
     if (IS_IOS) {
-      playbackProcessorRef.current?.disconnect();
-      playbackProcessorRef.current = null;
+      stopAllScheduledPlayback();
       playbackCtxRef.current?.close();
       playbackCtxRef.current = null;
-      playbackBufferRef.current = [];
-      playbackOffsetRef.current = 0;
     }
 
     const ws = wsRef.current;
@@ -497,16 +490,12 @@ export default function ConversationModal({
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ type: "response.cancel" }));
       }
-      // Clearing the buffer immediately silences any in-flight AI audio. On
-      // iOS Safari we also fully destroy the playback context — audio-session
-      // renegotiation during getUserMedia can otherwise make the ScriptProcessor
-      // glitch and output garbled audio. Other browsers don't have that issue
-      // and keeping the context alive avoids a first-word gap on the next reply.
-      playbackBufferRef.current = [];
-      playbackOffsetRef.current = 0;
+      // Stop every scheduled source so any in-flight AI audio goes silent
+      // immediately. On iOS Safari also destroy the playback context — the
+      // audio-session renegotiation during getUserMedia can otherwise leave
+      // the output pipeline in a bad state.
+      stopAllScheduledPlayback();
       if (IS_IOS) {
-        playbackProcessorRef.current?.disconnect();
-        playbackProcessorRef.current = null;
         playbackCtxRef.current?.close();
         playbackCtxRef.current = null;
       }
