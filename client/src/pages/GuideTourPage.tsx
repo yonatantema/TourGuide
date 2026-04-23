@@ -69,28 +69,39 @@ export default function GuideTourPage() {
     }
   };
 
-  const startCamera = () => {
+  const startCamera = async () => {
     stopCamera();
-    navigator.mediaDevices
-      .getUserMedia({ video: { facingMode: "environment" } })
-      .then((s) => {
-        streamRef.current = s;
-        if (videoRef.current) {
-          videoRef.current.srcObject = s;
-          videoRef.current.onloadedmetadata = () => {
-            setCameraStatus("active");
-          };
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+    } catch (err: any) {
+      // Desktop Chrome / devices without a rear camera may reject the facingMode
+      // constraint. Fall back to any available camera before giving up.
+      if (err?.name === "OverconstrainedError" || err?.name === "NotFoundError") {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        } catch {
+          setCameraStatus("denied");
+          return;
         }
-        s.getVideoTracks().forEach((track) => {
-          track.onended = () => {
-            setCameraStatus("pending");
-            reloadCamera();
-          };
-        });
-      })
-      .catch(() => {
+      } else {
         setCameraStatus("denied");
-      });
+        return;
+      }
+    }
+    streamRef.current = stream;
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream;
+      videoRef.current.onloadedmetadata = () => {
+        setCameraStatus("active");
+      };
+    }
+    stream.getVideoTracks().forEach((track) => {
+      track.onended = () => {
+        setCameraStatus("pending");
+        reloadCamera();
+      };
+    });
   };
 
   const reloadCamera = () => {
