@@ -75,16 +75,17 @@ export default function GuideTourPage() {
     try {
       stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
     } catch (err: any) {
-      // Desktop Chrome / devices without a rear camera may reject the facingMode
-      // constraint. Fall back to any available camera before giving up.
-      if (err?.name === "OverconstrainedError" || err?.name === "NotFoundError") {
-        try {
-          stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        } catch {
-          setCameraStatus("denied");
-          return;
-        }
-      } else {
+      // Only treat an explicit user denial as final. Transient failures
+      // (OverconstrainedError when no rear camera, NotReadableError when the
+      // device is briefly busy, AbortError on race with stopCamera) are worth
+      // retrying with a looser constraint before giving up.
+      if (err?.name === "NotAllowedError") {
+        setCameraStatus("denied");
+        return;
+      }
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      } catch {
         setCameraStatus("denied");
         return;
       }
