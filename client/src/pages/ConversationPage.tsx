@@ -123,8 +123,8 @@ export default function ConversationModal({
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
-        playbackCtxRef.current?.resume();
-        audioContextRef.current?.resume();
+        playbackCtxRef.current?.resume().catch(() => {});
+        audioContextRef.current?.resume().catch(() => {});
       }
     };
     document.addEventListener("visibilitychange", handleVisibility);
@@ -173,10 +173,10 @@ export default function ConversationModal({
     sourceRef.current = null;
     processorRef.current?.disconnect();
     processorRef.current = null;
-    audioContextRef.current?.close();
+    audioContextRef.current?.close().catch(() => {});
     audioContextRef.current = null;
     stopAllScheduledPlayback();
-    playbackCtxRef.current?.close();
+    playbackCtxRef.current?.close().catch(() => {});
     playbackCtxRef.current = null;
     audioChunksRef.current = [];
   }, []);
@@ -202,14 +202,21 @@ export default function ConversationModal({
   }, [cleanup]);
 
   const ensurePlaybackStream = () => {
-    if (playbackCtxRef.current) {
-      if (playbackCtxRef.current.state === "suspended") {
-        playbackCtxRef.current.resume();
+    const existing = playbackCtxRef.current;
+    if (existing && existing.state !== "closed") {
+      if (existing.state === "suspended") {
+        existing.resume().catch(() => {});
       }
       return;
     }
+    // AudioContexts created outside a user-gesture callback (this runs from a
+    // WebSocket message handler) can start in "suspended" state under Chrome's
+    // autoplay policy. Explicitly resume so scheduled sources start on time.
     const ctx = new AudioContext({ sampleRate: 24000 });
     playbackCtxRef.current = ctx;
+    if (ctx.state === "suspended") {
+      ctx.resume().catch(() => {});
+    }
   };
 
   const enqueueAudio = (float32: Float32Array) => {
@@ -396,15 +403,19 @@ export default function ConversationModal({
 
       processor.onaudioprocess = (e) => {
         const inputData = e.inputBuffer.getChannelData(0);
-        // Silence detection — re-acquire mic after ~1-2s of silence (Safari fallback)
-        const energy = inputData.reduce((sum, s) => sum + Math.abs(s), 0);
-        if (energy < 0.001) {
-          silentChunksRef.current++;
-          if (silentChunksRef.current > 20) {
-            reacquireMic();
+        if (IS_IOS) {
+          // iOS Safari occasionally drops the mic stream to digital silence
+          // mid-recording. Reacquire after ~1.7s of pure zeros. Gated to iOS
+          // because on Chrome a mid-recording getUserMedia swap causes gaps.
+          const energy = inputData.reduce((sum, s) => sum + Math.abs(s), 0);
+          if (energy < 0.001) {
+            silentChunksRef.current++;
+            if (silentChunksRef.current > 20) {
+              reacquireMic();
+            }
+          } else {
+            silentChunksRef.current = 0;
           }
-        } else {
-          silentChunksRef.current = 0;
         }
         const resampled = resampleTo24kHz(inputData, ctx.sampleRate);
         const pcm16 = float32ToPcm16(resampled);
@@ -429,7 +440,7 @@ export default function ConversationModal({
     // which eliminates system-level output AGC causing volume fluctuations.
     micStreamRef.current?.getTracks().forEach((t) => t.stop());
     micStreamRef.current = null;
-    audioContextRef.current?.close();
+    audioContextRef.current?.close().catch(() => {});
     audioContextRef.current = null;
     // Only iOS Safari needs the playback context destroyed here — it keeps
     // audio routed through the earpiece until a fresh AudioContext is created
@@ -437,7 +448,7 @@ export default function ConversationModal({
     // next reply starts instantly instead of waiting for a new audio pipeline.
     if (IS_IOS) {
       stopAllScheduledPlayback();
-      playbackCtxRef.current?.close();
+      playbackCtxRef.current?.close().catch(() => {});
       playbackCtxRef.current = null;
     }
 
@@ -496,7 +507,7 @@ export default function ConversationModal({
       // the output pipeline in a bad state.
       stopAllScheduledPlayback();
       if (IS_IOS) {
-        playbackCtxRef.current?.close();
+        playbackCtxRef.current?.close().catch(() => {});
         playbackCtxRef.current = null;
       }
       // Update UI and block audio deltas immediately (before async getUserMedia)
