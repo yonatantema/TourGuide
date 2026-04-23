@@ -12,6 +12,26 @@ const IS_IOS =
   (/iPhone|iPad|iPod/.test(navigator.userAgent) ||
     (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
 
+// Mic capture constraints. On macOS (Chrome / Safari / Firefox) leaving
+// echoCancellation enabled routes the input through the OS voice-processing
+// pipeline (AudioUnit VoiceProcessingIO), which aggressively high-pass-filters
+// and AGCs the signal in a way that can squash real speech from the built-in
+// mic to near-silence — the symptom is Whisper transcribing every recording
+// as "you". Push-to-talk doesn't need AEC (no simultaneous output to cancel)
+// or noise suppression, so turn them off. autoGainControl stays on so quiet
+// mics still deliver audible levels. iOS Safari stays on the { audio: true }
+// default because its tuned workaround stack (mic release between recordings,
+// playback-context reset for earpiece routing) was validated against it.
+const MIC_CONSTRAINTS: MediaStreamConstraints = IS_IOS
+  ? { audio: true }
+  : {
+      audio: {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: true,
+      },
+    };
+
 type ConversationStatus =
   | "idle"
   | "connecting"
@@ -22,21 +42,6 @@ type ConversationStatus =
   | "error";
 
 // Audio helpers
-function resampleTo24kHz(input: Float32Array, inputRate: number): Float32Array {
-  if (inputRate === 24000) return input;
-  const ratio = inputRate / 24000;
-  const len = Math.round(input.length / ratio);
-  const output = new Float32Array(len);
-  for (let i = 0; i < len; i++) {
-    const srcIdx = i * ratio;
-    const floor = Math.floor(srcIdx);
-    const ceil = Math.min(floor + 1, input.length - 1);
-    const frac = srcIdx - floor;
-    output[i] = input[floor] * (1 - frac) + input[ceil] * frac;
-  }
-  return output;
-}
-
 function float32ToPcm16(float32: Float32Array): Int16Array {
   const pcm16 = new Int16Array(float32.length);
   for (let i = 0; i < float32.length; i++) {
@@ -150,7 +155,7 @@ export default function ConversationModal({
 
   const reacquireMic = useCallback(async () => {
     try {
-      const newStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const newStream = await navigator.mediaDevices.getUserMedia(MIC_CONSTRAINTS);
       micStreamRef.current?.getTracks().forEach((t) => t.stop());
       micStreamRef.current = newStream;
       // If mid-recording, reconnect source to existing processor
@@ -287,7 +292,7 @@ export default function ConversationModal({
         // immediately need creates an unnecessary failure point and the
         // prompt is better shown when the user actually clicks to record.
         try {
-          const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const micStream = await navigator.mediaDevices.getUserMedia(MIC_CONSTRAINTS);
           micStream.getTracks().forEach((t) => t.stop());
         } catch (micErr) {
           console.error("Microphone access failed:", micErr);
@@ -417,11 +422,15 @@ export default function ConversationModal({
       // Reuse existing mic stream or request a new one
       let stream = micStreamRef.current;
       if (!stream || !stream.active) {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream = await navigator.mediaDevices.getUserMedia(MIC_CONSTRAINTS);
         micStreamRef.current = stream;
       }
 
-      const ctx = new AudioContext();
+      // Create the recording context at 24kHz so Chrome's internal resampler
+      // handles the rate conversion from the mic's native rate. More reliable
+      // than our linear-interpolation resampler and lines up directly with
+      // the PCM16/24kHz format the OpenAI Realtime API expects.
+      const ctx = new AudioContext({ sampleRate: 24000 });
       audioContextRef.current = ctx;
       if (ctx.state === "suspended") await ctx.resume();
       const source = ctx.createMediaStreamSource(stream);
@@ -449,8 +458,7 @@ export default function ConversationModal({
             silentChunksRef.current = 0;
           }
         }
-        const resampled = resampleTo24kHz(inputData, ctx.sampleRate);
-        const pcm16 = float32ToPcm16(resampled);
+        const pcm16 = float32ToPcm16(inputData);
         audioChunksRef.current.push(pcm16);
       };
 
@@ -509,6 +517,18 @@ export default function ConversationModal({
       offset += chunk.length;
     }
     audioChunksRef.current = [];
+
+    // Diagnostic: peak amplitude of the recording (Int16 range 0..32767).
+    // Normal speech ~5000+; silent/broken capture stays near 0. Helps
+    // distinguish mic-pipeline issues from transcription issues.
+    let peak = 0;
+    for (let i = 0; i < combined.length; i++) {
+      const abs = combined[i] < 0 ? -combined[i] : combined[i];
+      if (abs > peak) peak = abs;
+    }
+    console.log(
+      `[mic] recording: peak=${peak} samples=${combined.length} (${(combined.length / 24000).toFixed(2)}s)`
+    );
 
     // Discard recordings shorter than 0.5s to avoid phantom transcriptions
     if (combined.length < 12000) {
