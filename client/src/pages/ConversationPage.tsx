@@ -72,6 +72,23 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
   return bytes.buffer;
 }
 
+function describeMicError(err: any): string {
+  if (typeof navigator === "undefined" || !navigator.mediaDevices) {
+    return "Microphone access requires a secure (HTTPS) connection.";
+  }
+  const name = err?.name;
+  if (name === "NotAllowedError" || name === "PermissionDeniedError" || name === "SecurityError") {
+    return "Microphone access is blocked. Enable it for this site in your browser's site settings (the lock/info icon in the address bar). On Mac, also check System Settings → Privacy & Security → Microphone.";
+  }
+  if (name === "NotFoundError" || name === "DevicesNotFoundError") {
+    return "No microphone was detected. Connect one and try again.";
+  }
+  if (name === "NotReadableError" || name === "TrackStartError") {
+    return "Your microphone is being used by another app. Close it and try again.";
+  }
+  return `Could not access the microphone: ${err?.message || name || "unknown error"}`;
+}
+
 interface ConversationModalProps {
   artwork: Artwork;
   guideId: number;
@@ -260,10 +277,25 @@ export default function ConversationModal({
     setLimitError(null);
 
     try {
-      // Request mic access to trigger browser permission prompt, then release
-      // so Safari exits "playAndRecord" mode during the AI greeting playback.
-      const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      micStream.getTracks().forEach((t) => t.stop());
+      if (IS_IOS) {
+        // iOS Safari only: request mic up-front so the permission prompt
+        // fires before playback starts, then release it so Safari's audio
+        // session transitions back from "playAndRecord" to "playback" for
+        // the AI greeting (otherwise the greeting routes through the
+        // earpiece / is gated by system-level AGC).
+        // On other browsers we skip this — requesting the mic we don't
+        // immediately need creates an unnecessary failure point and the
+        // prompt is better shown when the user actually clicks to record.
+        try {
+          const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          micStream.getTracks().forEach((t) => t.stop());
+        } catch (micErr) {
+          console.error("Microphone access failed:", micErr);
+          alert(describeMicError(micErr));
+          setStatus("idle");
+          return;
+        }
+      }
 
       const { clientSecret, remainingSeconds } = await createRealtimeSession(guideId, artwork.id, language);
       remainingSecondsRef.current = remainingSeconds;
@@ -427,7 +459,14 @@ export default function ConversationModal({
       setStatus("recording");
     } catch (err) {
       console.error("Microphone access failed:", err);
-      setStatus("error");
+      alert(describeMicError(err));
+      // Revert to a usable state so the user can listen or try again,
+      // rather than getting stuck on the generic error screen.
+      const ws = wsRef.current;
+      const target: ConversationStatus =
+        ws && ws.readyState === WebSocket.OPEN ? "ready" : "idle";
+      setStatus(target);
+      statusRef.current = target;
     }
   };
 
