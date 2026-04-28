@@ -1,0 +1,52 @@
+# Render Blueprint — declares the STAGING set of services only.
+# Production services were created manually via the dashboard before this
+# file existed and remain manually managed (so this Blueprint cannot
+# accidentally touch live museum traffic). Provision staging by importing
+# this Blueprint in the Render dashboard: New -> Blueprint -> point at
+# this repo. See docs/STAGING.md for the full provisioning checklist
+# (including the manual secrets that need to be set after the first
+# deploy and the Google OAuth redirect URI to add).
+
+databases:
+  - name: tourguide-staging-db
+    plan: starter
+
+services:
+  - type: web
+    name: tourguide-staging-server
+    runtime: node
+    plan: starter
+    branch: develop
+    rootDir: server
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tourguide-staging-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        value: https://tourguide-staging-server.onrender.com/api/auth/google/callback
+      - key: CLIENT_URL
+        value: https://tourguide-staging-client.onrender.com
+      - key: UNLIMITED_USER_DOMAINS
+        value: temacreative.com
+
+  - type: web
+    name: tourguide-staging-client
+    runtime: static
+    branch: develop
+    rootDir: client
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://tourguide-staging-server.onrender.com
