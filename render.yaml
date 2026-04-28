@@ -1,17 +1,81 @@
-# Render Blueprint — declares the STAGING set of services only.
-# Production services were created manually via the dashboard before this
-# file existed and remain manually managed (so this Blueprint cannot
-# accidentally touch live museum traffic). Provision staging by importing
-# this Blueprint in the Render dashboard: New -> Blueprint -> point at
-# this repo. See docs/STAGING.md for the full provisioning checklist
-# (including the manual secrets that need to be set after the first
-# deploy and the Google OAuth redirect URI to add).
+# Render Blueprint — declares both production and staging.
+#
+# Branch model:
+#   main    -> production  (tour-guide-* services, region frankfurt)
+#   develop -> staging     (tourguide-staging-* services)
+#
+# Provisioning history:
+#   - Production was originally created manually in the Render dashboard.
+#     Each production service must be adopted into this Blueprint via the
+#     dashboard's per-service "Convert to Blueprint" / "Sync from Blueprint"
+#     flow before it's actually managed by this file. Until that step, the
+#     prod section here is documentation only.
+#   - Staging was provisioned by this Blueprint and is already managed.
+#
+# Sync safety:
+#   Sensitive secrets (JWT_SECRET, OPENAI_API_KEY, GOOGLE_CLIENT_ID,
+#   GOOGLE_CLIENT_SECRET) are marked sync: false — they live in the
+#   dashboard and Blueprint syncs do not touch them. Any other env var
+#   here will be enforced on every sync, so verify each one matches the
+#   current dashboard value before adopting prod.
 
 databases:
+  - name: tour-guide-database
+    plan: basic-256mb
+    region: frankfurt
+
   - name: tourguide-staging-db
     plan: basic-256mb
 
 services:
+  # ===== PRODUCTION =====
+
+  - type: web
+    name: tour-guide-server
+    runtime: node
+    plan: starter
+    region: frankfurt
+    branch: main
+    rootDir: server
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tour-guide-database
+          property: connectionString
+      - key: JWT_SECRET
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        value: https://tour-guide-client.onrender.com/auth/callback
+      - key: CLIENT_URL
+        value: https://tour-guide-client.onrender.com
+      - key: UNLIMITED_USER_DOMAINS
+        value: temacreative.com
+
+  - type: web
+    name: tour-guide-client
+    runtime: static
+    branch: main
+    rootDir: client
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: https://tour-guide-server.onrender.com
+
+  # ===== STAGING =====
+
   - type: web
     name: tourguide-staging-server
     runtime: node
@@ -47,9 +111,6 @@ services:
     rootDir: client
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
-    # SPA fallback: any path not matching a real file falls back to
-    # index.html so React Router can handle client-side routes like
-    # /auth/callback (the OAuth redirect target).
     routes:
       - type: rewrite
         source: /*
