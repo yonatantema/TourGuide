@@ -34,7 +34,7 @@ services:
       - key: GOOGLE_CLIENT_SECRET
         sync: false
       - key: GOOGLE_REDIRECT_URI
-        value: https://tourguide-staging-server.onrender.com/api/auth/google/callback
+        value: https://tourguide-staging-client.onrender.com/auth/callback
       - key: CLIENT_URL
         value: https://tourguide-staging-client.onrender.com
       - key: UNLIMITED_USER_DOMAINS
