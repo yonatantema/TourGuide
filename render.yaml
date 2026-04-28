@@ -9,7 +9,7 @@
 
 databases:
   - name: tourguide-staging-db
-    plan: starter
+    plan: basic-256mb
 
 services:
   - type: web
