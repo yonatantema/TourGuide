@@ -1,7 +1,17 @@
 import { Router, Request, Response } from "express";
 import pool from "../db";
+import { getString } from "../services/platformSettings";
 
 const router = Router();
+
+async function getDefaults() {
+  const [voice, knowledge, icon] = await Promise.all([
+    getString("defaults.voice", "coral"),
+    getString("defaults.knowledge", "internal"),
+    getString("defaults.icon", "art-expert"),
+  ]);
+  return { voice, knowledge, icon };
+}
 
 // GET /api/guides — List all guides for the user's org
 router.get("/", async (req: Request, res: Response) => {
@@ -40,9 +50,10 @@ router.get("/:id", async (req: Request, res: Response) => {
 router.post("/", async (req: Request, res: Response) => {
   try {
     const { name, description, personality, response_guidelines, voice, knowledge, icon, hidden } = req.body;
+    const defaults = await getDefaults();
     const result = await pool.query(
       "INSERT INTO guides (name, description, personality, response_guidelines, voice, knowledge, icon, hidden, org_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *",
-      [name, description, personality, response_guidelines, voice || "coral", knowledge || "internal", icon || "art-expert", hidden || false, req.orgId]
+      [name, description, personality, response_guidelines, voice || defaults.voice, knowledge || defaults.knowledge, icon || defaults.icon, hidden || false, req.orgId]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -65,9 +76,10 @@ router.put("/:id", async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Guide not found" });
     }
 
+    const defaults = await getDefaults();
     const result = await pool.query(
       "UPDATE guides SET name = $1, description = $2, personality = $3, response_guidelines = $4, voice = $5, knowledge = $6, icon = $7, hidden = $8 WHERE id = $9 AND org_id = $10 RETURNING *",
-      [name, description, personality, response_guidelines, voice || "coral", knowledge || "internal", icon || "art-expert", hidden || false, id, req.orgId]
+      [name, description, personality, response_guidelines, voice || defaults.voice, knowledge || defaults.knowledge, icon || defaults.icon, hidden || false, id, req.orgId]
     );
     res.json(result.rows[0]);
   } catch (err) {

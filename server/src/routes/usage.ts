@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { getAllUsage, isUnlimitedUser, USAGE_LIMITS } from "../services/usageLimits";
+import { getAllUsage, isUnlimitedUser, getAllLimits } from "../services/usageLimits";
 
 const router = Router();
 
@@ -8,11 +8,14 @@ router.get("/", async (req: Request, res: Response) => {
     if (isUnlimitedUser(req.user!.email)) {
       return res.json({ unlimited: true });
     }
-    const usage = await getAllUsage(req.user!.id);
+    const [usage, limits] = await Promise.all([
+      getAllUsage(req.user!.id),
+      getAllLimits(),
+    ]);
     res.json({
-      artwork_creation: { used: usage.artwork_creation, limit: USAGE_LIMITS.artwork_creation },
-      image_recognition: { used: usage.image_recognition, limit: USAGE_LIMITS.image_recognition },
-      conversation_seconds: { used: usage.conversation_seconds, limit: USAGE_LIMITS.conversation_seconds },
+      artwork_creation: { used: usage.artwork_creation, limit: limits.artwork_creation },
+      image_recognition: { used: usage.image_recognition, limit: limits.image_recognition },
+      conversation_seconds: { used: usage.conversation_seconds, limit: limits.conversation_seconds },
     });
   } catch (err) {
     console.error("Usage fetch error:", err);

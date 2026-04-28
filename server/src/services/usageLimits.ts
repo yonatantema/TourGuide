@@ -1,12 +1,34 @@
 import pool from "../db";
+import { getNumber } from "./platformSettings";
 
-export const USAGE_LIMITS = {
+const ACTIONS = ["artwork_creation", "image_recognition", "conversation_seconds"] as const;
+export type ActionType = (typeof ACTIONS)[number];
+
+// Fallback values if platform_settings is empty / unreachable. In normal
+// operation the active limits come from platform_settings, seeded by
+// init.sql and editable via the Platform Admin UI.
+const FALLBACK_LIMITS: Record<ActionType, number> = {
   artwork_creation: 10,
   image_recognition: 30,
-  conversation_seconds: 600, // 10 minutes
-} as const;
+  conversation_seconds: 600,
+};
 
-export type ActionType = keyof typeof USAGE_LIMITS;
+const SETTINGS_KEY: Record<ActionType, string> = {
+  artwork_creation: "limits.artwork_creation_per_month",
+  image_recognition: "limits.image_recognition_per_month",
+  conversation_seconds: "limits.conversation_seconds_per_month",
+};
+
+export async function getLimit(action: ActionType): Promise<number> {
+  return getNumber(SETTINGS_KEY[action], FALLBACK_LIMITS[action]);
+}
+
+export async function getAllLimits(): Promise<Record<ActionType, number>> {
+  const entries = await Promise.all(
+    ACTIONS.map(async (a) => [a, await getLimit(a)] as const)
+  );
+  return Object.fromEntries(entries) as Record<ActionType, number>;
+}
 
 export function isUnlimitedUser(email: string): boolean {
   const domains = (process.env.UNLIMITED_USER_DOMAINS || "")
@@ -77,6 +99,6 @@ export async function checkLimit(
     return { allowed: true, current: 0, limit: Number.MAX_SAFE_INTEGER };
   }
   const current = await getCurrentUsage(userId, action);
-  const limit = USAGE_LIMITS[action];
+  const limit = await getLimit(action);
   return { allowed: current < limit, current, limit };
 }

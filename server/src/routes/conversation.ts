@@ -1,7 +1,8 @@
 import { Router } from "express";
 import OpenAI from "openai";
 import pool from "../db";
-import { checkLimit, incrementUsage, USAGE_LIMITS } from "../services/usageLimits";
+import { checkLimit, incrementUsage, getLimit } from "../services/usageLimits";
+import { getString, getNumber } from "../services/platformSettings";
 
 const router = Router();
 
@@ -43,20 +44,27 @@ router.post("/session", async (req, res) => {
       : "";
 
     const isExternal = guide.knowledge === "external";
+    const variant = isExternal ? "external" : "internal";
 
-    const knowledgeInstruction = isExternal
-      ? "Use the artwork knowledge and visual description provided above as your primary source and always prioritize it. You may also freely draw on your broader knowledge of art history, techniques, movements, artists' lives, and related topics to enrich the conversation and answer follow-up questions."
-      : "STRICT KNOWLEDGE RESTRICTION: You may ONLY discuss information that is explicitly written in the artwork knowledge section above and the visual description. You must NOT use any outside knowledge from your training data, even if you know the answer. This includes facts about the artist's life, death, family, other works, art movements, historical context, or any other information not explicitly provided above. If a visitor asks about something not covered in your provided knowledge — even something widely known — politely let them know that you only have information about what is described above and cannot answer that particular question.";
-
-    const topicRestriction = isExternal
-      ? `Topic restriction (do NOT override your personality and response guidelines above):
-- You may ONLY discuss art-related topics.
-- Start with the specific artwork listed above, but if the visitor asks about similar artworks, art movements, artists, techniques, or other art subjects, answer them warmly.
-- If the visitor asks about anything unrelated to art (sports, politics, technology, personal topics, etc.), politely decline and let them know you can only discuss art-related subjects.`
-      : `Topic restriction (do NOT override your personality and response guidelines above):
-- You may ONLY discuss information that appears in the artwork knowledge and visual description sections above.
-- If the visitor asks about related art topics, other artworks, or artist details that are NOT in your provided knowledge, politely let them know you can only share what you know about this specific artwork.
-- If the visitor asks about anything unrelated to art, politely decline and let them know you can only discuss art-related subjects.`;
+    // Editable cross-customer prompt fragments (see Platform Admin -> Prompts).
+    // Hardcoded fallbacks here only kick in if platform_settings is empty.
+    const [
+      knowledgeInstruction,
+      generalInstructions,
+      topicRestriction,
+      realtimeModel,
+      transcriptionModel,
+      defaultVoice,
+      monthlyConversationSeconds,
+    ] = await Promise.all([
+      getString(`prompt.knowledge.${variant}`, ""),
+      getString(`prompt.general.${variant}`, ""),
+      getString(`prompt.topic.${variant}`, ""),
+      getString("model.realtime", "gpt-realtime-1.5"),
+      getString("model.transcription", "gpt-4o-transcribe"),
+      getString("defaults.voice", "coral"),
+      getLimit("conversation_seconds"),
+    ]);
 
     const instructions = `You are a museum guide. Your personality and how you must behave in every response:
 ${guide.personality}
@@ -73,27 +81,23 @@ ${artwork.artwork_info}${visualSection}
 
 General instructions:
 ${knowledgeInstruction}
-- Speak naturally and friendly, always staying in character with your personality above
-- Focus on the most interesting or relevant details${isExternal ? "\n- If the visitor asks something you genuinely don't know, say so clearly" : ""}
-- Start with a brief, general greeting and mention the artwork title. Keep the opening short and high-level — do not go into specific details about what figures are wearing, holding, or doing. Wait for the visitor to ask before diving into specifics.
-- If the visitor's message is empty, silent, unclear, or seems to contain no actual question or statement, do not make up or assume what they said. Instead, kindly ask them to repeat themselves.
-- When pronouncing the name of an artist, use the original language's pronunciation of that artist name, based on IPA (International Phonetic Alphabet).
+${generalInstructions}
 - You MUST respond entirely in ${language || "english"}. Every word you say must be in ${language || "english"}.
 
 ${topicRestriction}`;
 
     const session = await openai.beta.realtime.sessions.create({
-      model: "gpt-realtime-1.5" as any,
-      voice: guide.voice || "coral",
+      model: realtimeModel as any,
+      voice: guide.voice || defaultVoice,
       modalities: ["text", "audio"],
       instructions,
       input_audio_format: "pcm16",
       output_audio_format: "pcm16",
-      input_audio_transcription: { model: "gpt-4o-transcribe", language: language === "french" ? "fr" : "en" } as any,
+      input_audio_transcription: { model: transcriptionModel, language: language === "french" ? "fr" : "en" } as any,
       turn_detection: null as any, // push-to-talk: disable server VAD
     });
 
-    const remainingSeconds = USAGE_LIMITS.conversation_seconds - limitCheck.current;
+    const remainingSeconds = monthlyConversationSeconds - limitCheck.current;
 
     return res.json({
       clientSecret: (session as any).client_secret?.value,
@@ -114,8 +118,9 @@ router.post("/end", async (req, res) => {
       return res.status(400).json({ error: "Invalid duration" });
     }
 
-    // Clamp to 15 minutes max to prevent abuse
-    const clamped = Math.min(Math.round(durationSeconds), 900);
+    // Clamp to the configured per-session ceiling to prevent abuse.
+    const sessionMax = await getNumber("limits.session_max_seconds", 900);
+    const clamped = Math.min(Math.round(durationSeconds), sessionMax);
 
     if (clamped > 0) {
       await incrementUsage(req.user!.id, req.user!.email, "conversation_seconds", clamped);

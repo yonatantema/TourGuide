@@ -2,6 +2,7 @@ import { Router } from "express";
 import OpenAI from "openai";
 import pool from "../db";
 import { checkLimit, incrementUsage } from "../services/usageLimits";
+import { getString, getNumber } from "../services/platformSettings";
 
 const router = Router();
 
@@ -71,15 +72,24 @@ router.post("/", async (req, res) => {
       artist: a.artist_name,
     }));
 
+    const [model, temperature, maxTokens, systemPrompt] = await Promise.all([
+      getString("model.recognition", "gpt-4o"),
+      getNumber("model.recognition.temperature", 0),
+      getNumber("model.recognition.max_tokens", 300),
+      getString(
+        "prompt.recognition.system",
+        "You are an art recognition system in a museum. Your job is to identify if the visitor's photo matches one of the artworks in our collection. You must return the exact artwork ID from the provided collection."
+      ),
+    ]);
+
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      temperature: 0,
-      max_tokens: 300,
+      model,
+      temperature,
+      max_tokens: maxTokens,
       messages: [
         {
           role: "system",
-          content:
-            "You are an art recognition system in a museum. Your job is to identify if the visitor's photo matches one of the artworks in our collection. You must return the exact artwork ID from the provided collection.",
+          content: systemPrompt,
         },
         {
           role: "user",
