@@ -5,12 +5,14 @@ import path from "path";
 import fs from "fs";
 import pool from "./db";
 import { requireAuth } from "./middleware/auth";
+import { requirePlatformAdmin } from "./middleware/platformAdmin";
 import authRoutes from "./routes/auth";
 import artworkRoutes from "./routes/artworks";
 import guideRoutes from "./routes/guides";
 import recognizeRoutes from "./routes/recognize";
 import conversationRoutes from "./routes/conversation";
 import usageRoutes from "./routes/usage";
+import platformRoutes from "./routes/platform";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -42,6 +44,7 @@ app.use("/api/guides", requireAuth, guideRoutes);
 app.use("/api/recognize", requireAuth, recognizeRoutes);
 app.use("/api/conversation", requireAuth, conversationRoutes);
 app.use("/api/usage", requireAuth, usageRoutes);
+app.use("/api/platform", requireAuth, requirePlatformAdmin, platformRoutes);
 
 // Initialize database table and start server
 const initSQL = fs.readFileSync(path.join(__dirname, "db/init.sql"), "utf-8");
