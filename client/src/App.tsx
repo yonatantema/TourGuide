@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import PlatformProtectedRoute from "./components/PlatformProtectedRoute";
 import LoginPage from "./pages/LoginPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
 import SetupPage from "./pages/SetupPage";
@@ -17,6 +18,13 @@ import EditGuidePage from "./pages/EditGuidePage";
 import ChooseGuidePage from "./pages/ChooseGuidePage";
 import GuideTourPage from "./pages/GuideTourPage";
 import PublicArtworkPage from "./pages/PublicArtworkPage";
+import PlatformPage from "./pages/PlatformPage";
+import PlatformPromptsPage from "./pages/PlatformPromptsPage";
+import PlatformModelsPage from "./pages/PlatformModelsPage";
+import PlatformLimitsPage from "./pages/PlatformLimitsPage";
+import PlatformDefaultsPage from "./pages/PlatformDefaultsPage";
+import PlatformSeedContentPage from "./pages/PlatformSeedContentPage";
+import PlatformAdminsPage from "./pages/PlatformAdminsPage";
 
 export default function App() {
   return (
@@ -44,6 +52,15 @@ export default function App() {
           <Route path="/guidelines/add" element={<ProtectedRoute><AddGuidePage /></ProtectedRoute>} />
           <Route path="/guidelines/:id" element={<ProtectedRoute><GuideDetailPage /></ProtectedRoute>} />
           <Route path="/guidelines/:id/edit" element={<ProtectedRoute><EditGuidePage /></ProtectedRoute>} />
+
+          {/* Platform admin routes (TEMA Creative employees only) */}
+          <Route path="/platform" element={<PlatformProtectedRoute><PlatformPage /></PlatformProtectedRoute>} />
+          <Route path="/platform/prompts" element={<PlatformProtectedRoute><PlatformPromptsPage /></PlatformProtectedRoute>} />
+          <Route path="/platform/models" element={<PlatformProtectedRoute><PlatformModelsPage /></PlatformProtectedRoute>} />
+          <Route path="/platform/limits" element={<PlatformProtectedRoute><PlatformLimitsPage /></PlatformProtectedRoute>} />
+          <Route path="/platform/defaults" element={<PlatformProtectedRoute><PlatformDefaultsPage /></PlatformProtectedRoute>} />
+          <Route path="/platform/seed-content" element={<PlatformProtectedRoute><PlatformSeedContentPage /></PlatformProtectedRoute>} />
+          <Route path="/platform/admins" element={<PlatformProtectedRoute><PlatformAdminsPage /></PlatformProtectedRoute>} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

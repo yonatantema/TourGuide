@@ -1,11 +1,14 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
 import { API_URL, getToken, clearToken } from "../services/api";
 
+export type PlatformRole = "user" | "platform_admin";
+
 interface User {
   id: string;
   email: string;
   name: string;
   picture: string | null;
+  platformRole: PlatformRole;
 }
 
 interface Org {
@@ -52,7 +55,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       const data = await res.json();
-      setUser(data.user);
+      setUser({
+        ...data.user,
+        platformRole: data.user?.platformRole ?? "user",
+      });
       setOrg(data.org);
       setNeedsSetup(data.needsSetup);
     } catch {

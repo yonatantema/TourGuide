@@ -118,7 +118,13 @@ router.get("/me", async (req: Request, res: Response) => {
     const needsSetup = !org;
 
     res.json({
-      user: { id: user.id, email: user.email, name: user.name, picture: user.picture },
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        picture: user.picture,
+        platformRole: user.platform_role ?? "user",
+      },
       org,
       needsSetup,
     });

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getUsage, UsageData } from "../services/usageApi";
+import { useAuth } from "../contexts/AuthContext";
 
 function UsageBar({ label, used, limit, format }: { label: string; used: number; limit: number; format?: (n: number) => string }) {
   const pct = Math.min((used / limit) * 100, 100);
@@ -28,6 +29,7 @@ function formatMinutes(seconds: number): string {
 }
 
 export default function AdminPage() {
+  const { user } = useAuth();
   const [usage, setUsage] = useState<UsageData | null>(null);
 
   useEffect(() => {
@@ -84,6 +86,24 @@ export default function AdminPage() {
             </Link>
           </div>
         </div>
+
+        {/* Platform Admin (TEMA Creative employees only) */}
+        {user?.platformRole === "platform_admin" && (
+          <div className="max-w-2xl w-full mt-8 bg-white rounded-xl border border-dashed border-gray-300 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="font-serif text-lg font-bold text-gray-900 mb-1">Platform Admin</h2>
+                <p className="text-gray-500 text-sm">Cross-customer settings and seed content (TEMA Creative only).</p>
+              </div>
+              <Link
+                to="/platform"
+                className="px-5 py-2 border border-gray-300 text-gray-800 rounded-md text-sm font-medium hover:bg-gray-50 transition-colors whitespace-nowrap"
+              >
+                Open
+              </Link>
+            </div>
+          </div>
+        )}
 
         {/* Monthly Usage */}
         {usage && (
