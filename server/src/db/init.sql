@@ -50,6 +50,21 @@ ALTER TABLE guides ADD COLUMN IF NOT EXISTS knowledge VARCHAR(10) NOT NULL DEFAU
 ALTER TABLE guides ADD COLUMN IF NOT EXISTS icon VARCHAR(255) NOT NULL DEFAULT 'art-expert';
 ALTER TABLE guides ADD COLUMN IF NOT EXISTS hidden BOOLEAN NOT NULL DEFAULT false;
 
+-- Platform-level role on users. 'user' (default) or 'platform_admin'.
+-- Platform admins (TEMA Creative employees) can edit cross-customer
+-- settings via the /platform UI.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS platform_role VARCHAR(20) NOT NULL DEFAULT 'user';
+
+-- Cross-customer key/value settings edited by platform admins. Values
+-- are TEXT and parsed by the consuming code. Pre-populated in a later
+-- phase with the values that are currently hardcoded across the server.
+CREATE TABLE IF NOT EXISTS platform_settings (
+  key VARCHAR(100) PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_by UUID REFERENCES users(id)
+);
+
 -- Multi-tenancy: add org_id to data tables
 ALTER TABLE artworks ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organizations(id) ON DELETE CASCADE;
 ALTER TABLE guides ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES organizations(id) ON DELETE CASCADE;
