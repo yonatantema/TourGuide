@@ -83,13 +83,13 @@ ${knowledgeInstruction}
 ${topicRestriction}`;
 
     const session = await openai.beta.realtime.sessions.create({
-      model: "gpt-realtime-2025-08-28" as any,
+      model: "gpt-realtime-1.5" as any,
       voice: guide.voice || "coral",
       modalities: ["text", "audio"],
       instructions,
       input_audio_format: "pcm16",
       output_audio_format: "pcm16",
-      input_audio_transcription: { model: "whisper-1", language: language === "french" ? "fr" : "en" } as any,
+      input_audio_transcription: { model: "gpt-4o-transcribe", language: language === "french" ? "fr" : "en" } as any,
       turn_detection: null as any, // push-to-talk: disable server VAD
     });
 

@@ -306,7 +306,7 @@ export default function ConversationModal({
       remainingSecondsRef.current = remainingSeconds;
 
       const ws = new WebSocket(
-        "wss://api.openai.com/v1/realtime?model=gpt-realtime-2025-08-28",
+        "wss://api.openai.com/v1/realtime?model=gpt-realtime-1.5",
         [
           "realtime",
           `openai-insecure-api-key.${clientSecret}`,
